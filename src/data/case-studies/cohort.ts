@@ -173,6 +173,7 @@ export const cohort: CaseStudy = {
   showcase: {
     title: "Build a cohort yourself.",
     body: "A clickable recreation of all three routes: pick a clinical area, compare criteria, and create a cohort in four steps. Sample data only.",
+    link: { label: "Open the prototype", href: "/work/ai-cohort-builder/prototype/" },
     image: landing,
     grid: {
       caption: "The screens · click any screen to zoom",

@@ -11,7 +11,11 @@ const { showcase: s } = Astro.props;
       <div class="text">
         <h2 id="showcase-title" class="display d-m">{s.title}</h2>
         <p class="body-m muted">{s.body}</p>
-        <a class="btn btn-primary" href={s.link.href} target="_blank" rel="noopener">{s.link.label} <span aria-hidden="true">↗</span></a>
+        {s.link.href.startsWith("http") ? (
+          <a class="btn btn-primary" href={s.link.href} target="_blank" rel="noopener">{s.link.label} <span aria-hidden="true">↗</span></a>
+        ) : (
+          <a class="btn btn-primary" href={s.link.href}>{s.link.label} <span aria-hidden="true">→</span></a>
+        )}
       </div>
       <div class="visual">
         {s.phone ? (
