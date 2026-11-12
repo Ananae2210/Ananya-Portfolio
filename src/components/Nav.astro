@@ -1,0 +1,127 @@
+---
+import { nav, site, type NavKey } from "../data/site";
+interface Props { active?: NavKey }
+const { active } = Astro.props;
+---
+<header class="nav-wrap">
+  <nav class="nav page px" aria-label="Main">
+    <a href="/" class="logo h4">{site.shortName}</a>
+    <ul class="links">
+      {nav.map((item) => (
+        <li>
+          <a href={item.href} class:list={["nav-link label-m", { active: item.key === active }]} aria-current={item.key === active ? "page" : undefined}>
+            {item.label}
+            <span class="underline" aria-hidden="true"></span>
+          </a>
+        </li>
+      ))}
+      <li class="status-pill label-s"><span class="dot" aria-hidden="true"></span>Available for work</li>
+    </ul>
+    <div class="mobile-actions">
+      <span class="status-pill label-s"><span class="dot" aria-hidden="true"></span>Available for work</span>
+      <button class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu" data-menu-open>
+        <span></span><span></span>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
+  <div class="mm-scrim" data-menu-close></div>
+  <div class="mm-panel">
+    <div class="mm-top">
+      <span class="label-m muted">Menu</span>
+      <button class="mm-close" aria-label="Close menu" data-menu-close>
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 2l14 14M16 2L2 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <ol class="mm-list">
+      {nav.map((item, i) => (
+        <li>
+          <a href={item.href} class:list={[{ active: item.key === active }]} data-menu-link>
+            <span class="label-s mm-num">{String(i + 1).padStart(2, "0")}</span>
+            <span class="display mm-label">{item.label}</span>
+            <span class="mm-arrow" aria-hidden="true">↗</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+    <div class="mm-bottom">
+      <span class="status-pill label-s"><span class="dot" aria-hidden="true"></span>Available for work</span>
+      <div>
+        <p class="label-s muted">Email</p>
+        <a class="mm-email" href={`mailto:${site.email}`}>{site.email}</a>
+      </div>
+      <div class="mm-ctas">
+        {site.resume && <a class="btn btn-primary" href={site.resume} target="_blank" rel="noopener">My Resume <span aria-hidden="true">↗</span></a>}
+        <a class="btn btn-secondary" href={site.linkedin} target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const menu = document.getElementById("mobile-menu")!;
+  const openBtn = document.querySelector<HTMLButtonElement>("[data-menu-open]")!;
+  const open = () => {
+    menu.hidden = false;
+    requestAnimationFrame(() => menu.classList.add("is-open"));
+    openBtn.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+    menu.querySelector<HTMLElement>(".mm-close")?.focus();
+  };
+  const close = () => {
+    menu.classList.remove("is-open");
+    openBtn.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+    setTimeout(() => (menu.hidden = true), 300);
+  };
+  openBtn.addEventListener("click", open);
+  menu.querySelectorAll("[data-menu-close],[data-menu-link]").forEach((el) => el.addEventListener("click", close));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !menu.hidden) close(); });
+</script>
+
+<style>
+  .nav-wrap { position: relative; z-index: 20; }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding-top: 32px; padding-bottom: 32px; }
+  .logo { line-height: 1.4; }
+  .links { display: flex; align-items: center; gap: 40px; }
+  .nav-link { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; transition: color 250ms var(--ease); }
+  .nav-link .underline { height: 2px; width: 0; background: var(--accent); transition: width 250ms var(--ease-out, ease-out); }
+  .nav-link:hover, .nav-link.active { color: var(--accent); }
+  .nav-link:hover .underline, .nav-link.active .underline { width: 100%; }
+  .mobile-actions { display: none; align-items: center; gap: 12px; }
+  .menu-btn { width: 44px; height: 44px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; }
+  .menu-btn span { width: 18px; height: 2px; border-radius: 2px; background: var(--text-primary); }
+
+  @media (max-width: 1100px) { .links { gap: 24px; } }
+  @media (max-width: 960px) {
+    .links { display: none; }
+    .mobile-actions { display: flex; }
+    .nav { padding-top: 20px; padding-bottom: 20px; }
+    .logo { font-size: 18px; }
+  }
+
+  .mobile-menu { position: fixed; inset: 0; z-index: 100; }
+  .mm-scrim { position: absolute; inset: 0; background: rgba(10, 15, 14, 0.6); opacity: 0; transition: opacity 300ms var(--ease); }
+  .mm-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(100%, 390px);
+    background: var(--bg-base); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 28px 24px 40px; overflow-y: auto;
+    transform: translateX(100%); transition: transform 300ms var(--ease);
+  }
+  .mobile-menu.is-open .mm-scrim { opacity: 1; }
+  .mobile-menu.is-open .mm-panel { transform: none; }
+  .mm-top { display: flex; justify-content: space-between; align-items: center; }
+  .mm-close { width: 44px; height: 44px; border-radius: 50%; background: var(--bg-raised); display: grid; place-items: center; }
+  .mm-list { margin-top: 72px; }
+  .mm-list a { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .mm-num { color: var(--text-secondary); width: 20px; }
+  .mm-label { flex: 1; font-size: 36px; line-height: 1; }
+  .mm-arrow { color: var(--text-secondary); }
+  .mm-list a.active .mm-label, .mm-list a.active .mm-num, .mm-list a.active .mm-arrow { color: var(--accent); }
+  .mm-bottom { margin-top: auto; padding-top: 64px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .mm-bottom .status-pill { background: var(--bg-surface); }
+  .mm-email { font-size: 18px; font-weight: 600; }
+  .mm-ctas { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+</style>

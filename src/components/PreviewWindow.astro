@@ -1,0 +1,14 @@
+---
+interface Props { url: string; image: string; alt: string; small?: boolean; class?: string; eager?: boolean }
+const { url, image, alt, small = false, class: cls, eager = false } = Astro.props;
+const src = `/images/previews/${image}${small ? "-sm" : ""}.webp`;
+---
+<div class:list={["window", cls]}>
+  <div class="window-chrome">
+    <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="window-url">{url}</span>
+  </div>
+  <div class="window-screen">
+    <img src={src} alt={alt} width={small ? 923 : 1845} height={small ? 560 : 1119} loading={eager ? "eager" : "lazy"} decoding="async" />
+  </div>
+</div>

@@ -1,0 +1,50 @@
+---
+import "@fontsource/anton/400.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/ibm-plex-mono/500.css";
+import "../styles/global.css";
+import Nav from "../components/Nav.astro";
+import ClosingCTA from "../components/ClosingCTA.astro";
+import { site, type NavKey } from "../data/site";
+
+interface Props { title?: string; description?: string; active?: NavKey }
+const { title, description = site.description, active } = Astro.props;
+const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — UI/UX & Visual Designer`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0a0f0e" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL("/images/og.png", Astro.site ?? Astro.url.origin)} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip label-s" href="#main">Skip to content</a>
+    <Nav active={active} />
+    <main id="main">
+      <slot />
+    </main>
+    <ClosingCTA />
+    <script>
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } });
+      }, { rootMargin: "0px 0px -10% 0px" });
+      document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+    </script>
+    <style>
+      .skip { position: absolute; left: 16px; top: -48px; z-index: 200; background: var(--accent); color: var(--text-on-accent); padding: 8px 12px; border-radius: 8px; }
+      .skip:focus { top: 16px; }
+    </style>
+  </body>
+</html>

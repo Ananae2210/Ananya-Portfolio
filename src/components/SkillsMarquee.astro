@@ -1,0 +1,52 @@
+---
+const skills = [
+  "UI/UX Design", "Dashboard Design", "Design Systems", "Wireframing", "Prototyping",
+  "User Research", "Information Architecture", "Visual Design", "Responsive Design", "Usability Testing",
+];
+const Star = `<svg class="star" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 0c1.2 9.6 8.4 16.8 18 18-9.6 1.2-16.8 8.4-18 18-1.2-9.6-8.4-16.8-18-18C9.6 16.8 16.8 9.6 18 0z" fill="currentColor"/></svg>`;
+---
+<section class="band-wrap" aria-label="Skills">
+  <p class="sr-only">{skills.join(", ")}</p>
+  <div class="band back" aria-hidden="true">
+    <div class="track reverse">
+      {[0, 1].map(() => (
+        <div class="set">
+          {skills.map((s) => (<><span class="display">{s}</span><Fragment set:html={Star} /></>))}
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="band front" aria-hidden="true">
+    <div class="track">
+      {[0, 1].map(() => (
+        <div class="set">
+          {skills.map((s) => (<><span class="display">{s}</span><Fragment set:html={Star} /></>))}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .band-wrap { position: relative; height: 380px; overflow: hidden; }
+  .band { position: absolute; left: -8%; width: 116%; height: 168px; display: flex; align-items: center; overflow: hidden; }
+  .back { background: var(--bg-surface); color: var(--text-secondary); top: 150px; transform: rotate(-3deg); }
+  .front { background: var(--accent); color: var(--text-on-accent); top: 106px; transform: rotate(4deg); }
+  .track { display: flex; width: max-content; animation: scroll 40s linear infinite; }
+  .track.reverse { animation-direction: reverse; animation-duration: 48s; }
+  .set { display: flex; align-items: center; gap: 40px; padding-right: 40px; }
+  .set .display { font-size: var(--type-display-l); line-height: 0.92; white-space: nowrap; }
+  .set :global(.star) { width: 36px; height: 36px; flex: none; }
+  @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  @media (max-width: 760px) {
+    .band-wrap { height: 150px; }
+    .band { height: 72px; left: -40%; width: 180%; }
+    .back { top: 70px; }
+    .front { top: 40px; }
+    .set { gap: 20px; padding-right: 20px; }
+    .set .display { font-size: 40px; }
+    .set :global(.star) { width: 18px; height: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .track { animation: none; } }
+</style>

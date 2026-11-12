@@ -1,0 +1,55 @@
+---
+import { site } from "../data/site";
+---
+<footer class="closing" id="contact">
+  <div class="page px inner">
+    <h2 class="display d-xl headline">Got something complex? Let’s make it clear.</h2>
+    <dl class="info">
+      <div><dt class="label-s">Based in</dt><dd class="h4">{site.location}</dd></div>
+      <div><dt class="label-s">Currently</dt><dd class="h4">{site.currently}</dd></div>
+      <div class="statement"><dt class="label-s">Approach</dt><dd class="body-m">{site.approach}</dd></div>
+    </dl>
+    <hr />
+    <div class="links">
+      <div>
+        <p class="label-s">Email</p>
+        <a class="email h3" href={`mailto:${site.email}`}>{site.email}</a>
+      </div>
+      <ul class="footer-nav label-m">
+        <li><a href="/">Home</a></li>
+        <li><a href="/work/">Work</a></li>
+        <li><a href="/ai-x-design/">AI × Design</a></li>
+        <li><a href="/#about">About</a></li>
+        <li><a href={site.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a></li>
+      </ul>
+    </div>
+    <p class="display wordmark" aria-hidden="true">{site.shortName}</p>
+  </div>
+</footer>
+
+<style>
+  .closing { background: var(--bg-inverse); color: var(--text-inverse); overflow: hidden; }
+  .inner { display: flex; flex-direction: column; gap: 64px; padding-top: var(--section-l); padding-bottom: 64px; }
+  .headline { max-width: 1280px; }
+  .info { display: flex; gap: 120px; margin: 0; }
+  .info div { display: flex; flex-direction: column; gap: 8px; }
+  .info dd { margin: 0; }
+  .statement dd { max-width: 380px; }
+  dt, .links .label-s { color: var(--text-inverse-secondary); }
+  hr { width: 100%; height: 1px; border: 0; margin: 0; background: var(--text-inverse); opacity: 0.2; }
+  .links { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; }
+  .links > div { display: flex; flex-direction: column; gap: 8px; }
+  .email { transition: color 200ms; }
+  .footer-nav { display: flex; gap: 32px; flex-wrap: wrap; }
+  .footer-nav a, .email { background-image: linear-gradient(currentColor, currentColor); background-size: 0 1px; background-repeat: no-repeat; background-position: 0 100%; transition: background-size 250ms var(--ease); }
+  .footer-nav a:hover, .email:hover { background-size: 100% 1px; }
+  .wordmark { font-size: var(--type-wordmark); line-height: 0.9; text-align: center; margin-top: 0; }
+
+  @media (max-width: 1100px) { .info { gap: 56px; flex-wrap: wrap; } }
+  @media (max-width: 760px) {
+    .inner { gap: 40px; padding-top: 80px; }
+    .info { flex-direction: column; gap: 24px; }
+    .links { flex-direction: column; align-items: flex-start; gap: 24px; }
+    .footer-nav { gap: 12px 20px; }
+  }
+</style>

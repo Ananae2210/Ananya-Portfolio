@@ -1,0 +1,171 @@
+---
+import Base from "../../layouts/Base.astro";
+import PreviewWindow from "../../components/PreviewWindow.astro";
+import { projects, projectHref } from "../../data/projects";
+
+const minis = [
+  {
+    href: "/ai-x-design/",
+    image: "/images/ai-x-design-map.webp",
+    meta: "2026 · AI × Design",
+    title: "AI-assisted product design workflow",
+    summary: "Six stages on a Double Diamond, showing where AI speeds up the work and where people stay in charge.",
+    link: "Read the workflow ↗",
+  },
+];
+---
+<Base title="Work" active="work" description="Case studies from healthcare, data and AI products by Ananya Asthana, UI/UX and visual designer.">
+  <section class="hero page px">
+    <p class="label-m accent">Selected work · 2023 — 2026</p>
+    <h1 class="display d-xxl">Work</h1>
+    <div class="intro-row">
+      <p class="body-l muted intro">Four case studies from healthcare, data and AI products, plus smaller projects and experiments. Each one starts with a dense problem and ends with something people can actually use.</p>
+      <p class="display rhythm">Dense problems. Usable answers.</p>
+    </div>
+    <nav class="index" aria-label="Project index">
+      <p class="label-s muted">Index — jump to a project</p>
+      <ol>
+        {projects.map((p) => (
+          <li><a href={`#${p.slug}`}>
+            <span class="label-m accent">{p.index}</span>
+            <span class="display idx-title">{p.title}</span>
+            <span class="label-s muted idx-cat">{p.category}</span>
+            <span class="label-s idx-go">Case study&nbsp;&nbsp;↓</span>
+          </a></li>
+        ))}
+        <li><a href="#smaller-projects">
+          <span class="label-m accent">{String(projects.length + 1).padStart(2, "0")}</span>
+          <span class="display idx-title">Smaller projects</span>
+          <span class="label-s muted idx-cat">Explorations · Side work</span>
+          <span class="label-s idx-go">More work&nbsp;&nbsp;↓</span>
+        </a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <section class="studies page px" aria-labelledby="in-depth">
+    <div class="studies-head">
+      <div class="title-block">
+        <p class="label-m accent">In depth</p>
+        <h2 class="display d-l" id="in-depth">Case studies</h2>
+      </div>
+      <p class="label-s muted">{projects.length} projects · Read in order or jump in</p>
+    </div>
+
+    {projects.map((p, i) => (
+      <article class:list={["card reveal", { flip: i % 2 === 1 }]} id={p.slug}>
+        <div class="info">
+          <p class="top"><span class="label-m accent">{p.index}</span><span class="label-s muted">Case study</span></p>
+          <h3><a class="display d-m card-title" href={projectHref(p)}>{p.title}</a></h3>
+          <p class="body-m muted">{p.summary}</p>
+          <dl class="meta">
+            {p.meta.map((m) => (<div><dt class="label-s muted">{m.label}</dt><dd class="body-s">{m.value}</dd></div>))}
+          </dl>
+          <div class="tags">{p.tags.map((t) => <span class="tag">{t}</span>)}</div>
+          <p class="outcome"><span class="label-s">Outcome</span><span class="body-s">{p.outcome}</span></p>
+          <a class="btn btn-primary" href={projectHref(p)}>Read case study <span aria-hidden="true">→</span></a>
+        </div>
+        <a class="preview" href={projectHref(p)} aria-label={`Open the ${p.title} case study`}>
+          <span class="glow" aria-hidden="true"></span>
+          <PreviewWindow url={p.url} image={p.preview} alt={`${p.title} screen`} />
+        </a>
+      </article>
+    ))}
+  </section>
+
+  <section class="smaller page px" id="smaller-projects">
+    <div class="smaller-head">
+      <div class="title-block">
+        <p class="label-m accent">More work</p>
+        <h2 class="display d-l">Smaller projects</h2>
+      </div>
+      <p class="body-m muted">Explorations, side projects and quick experiments. Shorter reads, same care.</p>
+    </div>
+    <ul class="mini-grid">
+      {minis.map((m) => (
+        <li><a class="mini" href={m.href}>
+          <span class="mini-thumb"><img src={m.image} alt="" width="1280" height="1020" loading="lazy" /></span>
+          <span class="label-s muted">{m.meta}</span>
+          <span class="h4">{m.title}</span>
+          <span class="body-s muted">{m.summary}</span>
+          <span class="label-s accent">{m.link}</span>
+        </a></li>
+      ))}
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .hero { display: flex; flex-direction: column; gap: 40px; padding-top: 96px; padding-bottom: 96px; }
+  .intro-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; }
+  .intro { max-width: 640px; }
+  .rhythm { font-size: 28px; line-height: 1; white-space: nowrap; }
+  .index { display: flex; flex-direction: column; gap: 16px; }
+  .index ol { border-bottom: 1px solid var(--border); }
+  .index a { display: flex; align-items: center; gap: 32px; padding: 20px 0; border-top: 1px solid var(--border); text-transform: uppercase; }
+  .idx-title { flex: 1; font-size: 28px; line-height: 1; transition: color 200ms, transform 300ms var(--ease); }
+  .index a:hover .idx-title { color: var(--accent); transform: translateX(6px); }
+
+  .studies { display: flex; flex-direction: column; gap: 48px; padding-top: 40px; padding-bottom: 160px; }
+  .studies-head, .smaller-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
+  .title-block { display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    display: grid; grid-template-columns: 1fr 620px; gap: 56px; align-items: center;
+    padding: 56px; border-radius: 32px; background: var(--bg-surface); border: 1px solid var(--border);
+    scroll-margin-top: 24px;
+  }
+  .card.flip { grid-template-columns: 620px 1fr; }
+  .card.flip .preview { order: -1; }
+  .info { display: flex; flex-direction: column; gap: 24px; align-items: flex-start; min-width: 0; }
+  .top { display: flex; gap: 16px; align-items: center; }
+  .card-title:hover { color: var(--accent); }
+  .meta { display: flex; gap: 32px; width: 100%; padding: 20px 0; margin: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .meta div { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .meta dd { margin: 0; }
+  .outcome { display: flex; gap: 12px; width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--accent-soft); }
+  .outcome .label-s { color: var(--accent); flex: none; padding-top: 2px; }
+
+  .preview { position: relative; display: block; height: 500px; border-radius: 24px; background: var(--bg-base); overflow: hidden; }
+  .preview .glow { position: absolute; left: 16%; top: 24%; width: 68%; height: 60%; background: radial-gradient(closest-side, rgba(0, 212, 180, 0.28), transparent); filter: blur(24px); }
+  .preview :global(.window) { position: absolute; left: 40px; right: 40px; top: 50%; transform: translateY(-50%); transition: transform 500ms var(--ease); }
+  .preview:hover :global(.window) { transform: translateY(-50%) scale(1.03); }
+
+  .smaller { display: flex; flex-direction: column; gap: 48px; padding-bottom: 160px; scroll-margin-top: 24px; }
+  .smaller-head > p { max-width: 420px; }
+  .mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px 22px; }
+  .mini { display: flex; flex-direction: column; gap: 16px; }
+  .mini-thumb { height: 260px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-base); overflow: hidden; display: block; }
+  .mini-thumb img { width: 100%; height: 100%; object-fit: contain; transition: transform 500ms var(--ease); }
+  .mini:hover .mini-thumb img { transform: scale(1.04); }
+
+  @media (max-width: 1300px) {
+    .card, .card.flip { grid-template-columns: 1fr; }
+    .card.flip .preview { order: 0; }
+    .preview { height: auto; aspect-ratio: 620 / 500; }
+  }
+  @media (max-width: 1100px) {
+    .intro-row { flex-direction: column; align-items: flex-start; }
+    .mini-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 760px) {
+    .hero { gap: 24px; padding-top: 48px; padding-bottom: 48px; }
+    .rhythm { font-size: 22px; white-space: normal; }
+    .index a { gap: 12px; flex-wrap: wrap; padding: 16px 0; }
+    .idx-title { font-size: 22px; flex: 1 1 60%; }
+    .idx-cat { order: 3; width: 100%; padding-left: 32px; }
+    .idx-go { display: none; }
+    .studies { gap: 24px; padding-top: 24px; padding-bottom: 80px; }
+    .studies-head, .smaller-head { flex-direction: column; align-items: flex-start; }
+    .card { padding: 20px; gap: 24px; border-radius: 24px; }
+    .info { gap: 16px; }
+    .meta { flex-direction: column; gap: 12px; }
+    .outcome { flex-direction: column; gap: 4px; }
+    .preview { aspect-ratio: 4 / 3; border-radius: 16px; }
+    .preview :global(.window) { left: 12px; right: 12px; }
+    .btn { align-self: stretch; justify-content: center; }
+    .smaller { gap: 32px; padding-bottom: 80px; }
+    .mini-grid { grid-template-columns: 1fr; gap: 40px; }
+    .mini-thumb { height: 220px; }
+  }
+</style>
