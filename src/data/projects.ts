@@ -59,7 +59,7 @@ export const projects: Project[] = [
     summary:
       "A web app that turns a topic, an article link or notes into a multi-host podcast episode, free to try in under a minute.",
     category: "AI product · Web app",
-    tags: ["UI Design", "AI Product", "Healthcare"],
+    tags: ["UI Design", "AI Product", "Web App"],
     meta: [
       { label: "Role", value: "Product Development" },
       { label: "Platform", value: "Web · Desktop & mobile" },
