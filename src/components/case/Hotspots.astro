@@ -1,0 +1,63 @@
+---
+/* Numbered pins over a figure. Each pin opens a short note explaining a
+   design decision. Positions are % of the parent (position: relative). */
+import type { Hotspot } from "../../data/case-studies/types";
+interface Props { spots: Hotspot[]; id: string }
+const { spots, id } = Astro.props;
+---
+{spots.map((s, i) => (
+  <div class:list={["hs", s.side]} style={`left:${s.x}%;top:${s.y}%`} data-hs>
+    <button class="pin" aria-expanded="false" aria-controls={`${id}-hs-${i}`} aria-label={`Design note ${i + 1}: ${s.title}`}>
+      <span class="pulse" aria-hidden="true"></span><span class="num">{i + 1}</span>
+    </button>
+    <div class="note" id={`${id}-hs-${i}`} role="note" hidden>
+      <p class="note-title">{s.title}</p>
+      <p class="note-body">{s.body}</p>
+    </div>
+  </div>
+))}
+
+<script>
+  const close = (except?: Element) => document.querySelectorAll<HTMLElement>("[data-hs].open").forEach((h) => {
+    if (h === except) return;
+    h.classList.remove("open");
+    h.querySelector("button")!.setAttribute("aria-expanded", "false");
+    h.querySelector<HTMLElement>(".note")!.hidden = true;
+  });
+  document.querySelectorAll<HTMLElement>("[data-hs]").forEach((h) => {
+    const btn = h.querySelector("button")!;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = !h.classList.contains("open");
+      close(h);
+      h.classList.toggle("open", open);
+      btn.setAttribute("aria-expanded", String(open));
+      h.querySelector<HTMLElement>(".note")!.hidden = !open;
+    });
+  });
+  document.addEventListener("click", (e) => { if (!(e.target as Element).closest("[data-hs] .note")) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+</script>
+
+<style>
+  .hs { position: absolute; z-index: 3; width: 0; height: 0; }
+  .hs.open { z-index: 6; }
+  .pin { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; }
+  .num { position: relative; z-index: 1; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--text-on-accent); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 500; font-size: 14px; box-shadow: 0 0 0 2px rgba(10, 15, 14, 0.25); transition: transform 200ms var(--ease); }
+  .pin:hover .num, .hs.open .num { transform: scale(1.1); }
+  .pulse { position: absolute; inset: -8px; border-radius: 50%; background: rgba(0, 212, 180, 0.3); animation: pulse 2.2s ease-out infinite; }
+  @keyframes pulse { 0% { transform: scale(0.7); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+  .note { position: absolute; top: -28px; width: 300px; padding: 16px 18px; border-radius: 14px; background: #0a0f0e; border: 1px solid var(--accent); box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.7); text-align: left; }
+  .right .note { left: 32px; }
+  .left .note { right: 32px; }
+  .note-title { font-weight: 600; font-size: 16px; line-height: 1.4; color: var(--text-primary); }
+  .note-body { margin-top: 4px; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+
+  @media (max-width: 760px) {
+    .pin, .num { width: 26px; height: 26px; }
+    .pin { left: -13px; top: -13px; }
+    .num { font-size: 12px; }
+    .note { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; z-index: 50; }
+    .right .note, .left .note { left: 16px; right: 16px; }
+  }
+</style>

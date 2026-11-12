@@ -1,0 +1,259 @@
+---
+import type { Block } from "../../data/case-studies/types";
+import FigureView from "./FigureView.astro";
+import Concepts from "./Concepts.astro";
+import RouteMap from "./RouteMap.astro";
+import AiDemo from "./AiDemo.astro";
+import StoryMap from "./StoryMap.astro";
+import ThemeBlocks from "./ThemeBlocks.astro";
+interface Props { blocks: Block[]; sectionId: string }
+const { blocks, sectionId } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, "0");
+---
+{blocks.map((b, k) => {
+  const id = `${sectionId}-${k}`;
+  switch (b.type) {
+    case "lead":
+      return (
+        <div class="lead">
+          <p class="body-l">{b.primary}</p>
+          {b.secondary && <p class="body-l muted">{b.secondary}</p>}
+        </div>
+      );
+    case "heading":
+      return <h2 class="display d-m heading">{b.text}</h2>;
+    case "intro":
+      return <p class="body-l muted measure">{b.text}</p>;
+    case "numbered":
+      return (
+        <div class="numbered">
+          <h3 class="nb-head"><span class="display nb-n">{b.n}</span><span class="h3">{b.title}</span></h3>
+          <p class="body-l muted measure">{b.body}</p>
+        </div>
+      );
+    case "steps":
+      return (
+        <ol class:list={["steps", { four: b.items.length === 4 }]}>
+          {b.items.map((s) => (
+            <li class="step">
+              <span class="label-m accent">{s.kicker}</span>
+              <h4 class="step-title">{s.title}</h4>
+              <p class="step-body">{s.body}</p>
+            </li>
+          ))}
+        </ol>
+      );
+    case "subhead":
+      return (
+        <div class="subhead">
+          <h3 class="h3">{b.title}</h3>
+          {b.body && <p class="body-m muted">{b.body}</p>}
+        </div>
+      );
+    case "concepts":
+      return <Concepts />;
+    case "why":
+      return (
+        <div class="why">
+          <h3 class="h3">{b.title}</h3>
+          <p class="body-l muted measure">{b.body}</p>
+          <p class="body-l accent strong">{b.accent}</p>
+        </div>
+      );
+    case "routeMap":
+      return <RouteMap />;
+    case "aiDemo":
+      return <AiDemo />;
+    case "figure":
+      return <FigureView figure={b.figure} id={id} />;
+    case "impact":
+      return (
+        <p class="impact"><span class="label-m accent">{b.label}</span><span class="impact-text">{b.text}</span></p>
+      );
+    case "audience":
+      return (
+        <div class="group">
+          <p class="label-m accent">{b.title}</p>
+          <div class="audience">
+            {b.cards.map((c) => (
+              <article class="aud">
+                <p class="label-m accent">{c.tier}</p>
+                <h4 class="step-title">{c.title}</h4>
+                <p class="step-body">{c.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      );
+    case "rows":
+      return (
+        <div class="group">
+          <p class="label-m accent">{b.title}</p>
+          <ol class="rows">
+            {b.items.map((t, n) => <li><span class="label-m accent">{pad(n + 1)}</span><span>{t}</span></li>)}
+          </ol>
+        </div>
+      );
+    case "note":
+      return (
+        <div class="note">
+          <p class="label-m accent">{b.title}</p>
+          <p class="body-m muted">{b.body}</p>
+        </div>
+      );
+    case "table":
+      return (
+        <div class="group">
+          <p class="label-m accent">{b.title}</p>
+          <div class="table-wrap">
+            <table class="dtable">
+              <thead><tr>{b.columns.map((c) => <th class="label-s" scope="col">{c}</th>)}</tr></thead>
+              <tbody>
+                {b.rows.map((r) => (
+                  <tr>{r.map((cell, ci) => ci === 0 ? <th scope="row">{cell}</th> : <td data-label={b.columns[ci]} class:list={{ after: ci === 2 }}>{cell}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    case "overview":
+      return (
+        <dl class="overview">
+          {b.items.map((it) => <div><dt class="label-s muted">{it.label}</dt><dd class="h4">{it.value}</dd></div>)}
+        </dl>
+      );
+    case "summary":
+      return (
+        <div class="summary">
+          <p class="body-l measure">{b.body}</p>
+          <p class="display d-m accent">{b.accent}</p>
+        </div>
+      );
+    case "learnings":
+      return (
+        <div class="learn">
+          <div class="group">
+            <p class="label-m accent">What I learned</p>
+            {b.learned.map((t) => <p class="body-m measure">— {t}</p>)}
+          </div>
+          {b.note && <div class="note"><p class="label-m accent">{b.note.title}</p><p class="body-m muted">{b.note.body}</p></div>}
+          {b.next && <div class="group"><p class="label-m accent">Next</p><p class="body-m measure">{b.next}</p></div>}
+        </div>
+      );
+    case "storyMap":
+      return <StoryMap pages={b.pages} caption={b.caption} />;
+    case "visual":
+      return (
+        <div class="visual">
+          <div class="numbered">
+            <h3 class="nb-head"><span class="display nb-n">{b.n}</span><span class="h3">{b.title}</span></h3>
+            <p class="body-l muted measure">{b.body}</p>
+          </div>
+          <FigureView figure={b.figure} id={id} />
+        </div>
+      );
+    case "swatches":
+      return <ThemeBlocks kind="swatches" colours={b.colours} gradient={b.gradient} />;
+    case "specimens":
+      return <ThemeBlocks kind="specimens" items={b.items} />;
+    case "components":
+      return <ThemeBlocks kind="components" title={b.title} />;
+    case "interaction":
+      return (
+        <div class="interaction">
+          <div class="int-head"><h4 class="h4">{b.title}</h4><p class="label-s muted">{b.hint}</p></div>
+          <FigureView figure={b.figure} id={id} plain />
+        </div>
+      );
+    case "responsive":
+      return (
+        <div class="responsive">
+          {b.pairs.map((p, n) => (
+            <div class:list={["pair", { flip: p.phoneFirst }]}>
+              <div class="r-desk"><p class="label-s muted">{p.desktop.label}</p><FigureView figure={p.desktop.figure} id={`${id}-d${n}`} plain /></div>
+              <div class="r-phone"><p class="label-s muted">{p.phone.label}</p><FigureView figure={p.phone.figure} id={`${id}-p${n}`} plain /></div>
+            </div>
+          ))}
+        </div>
+      );
+  }
+})}
+
+<style>
+  .lead { display: flex; flex-direction: column; gap: 24px; max-width: 720px; }
+  .heading { max-width: 820px; }
+  .measure { max-width: 720px; }
+  .strong { font-weight: 600; }
+  .numbered { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+  .nb-head { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; font-weight: inherit; }
+  .nb-n { font-size: var(--type-display-m); line-height: 1; color: var(--accent); }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .steps.four { grid-template-columns: repeat(4, 1fr); }
+  .step, .aud { display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 20px; background: var(--bg-surface); border: 1px solid var(--border); }
+  .steps.four .step { padding: 24px; }
+  .step-title { font-size: 20px; font-weight: 600; line-height: 1.4; }
+  .step-body { font-size: 18px; line-height: 1.6; color: var(--text-secondary); }
+  .steps.four .step-body { font-size: 16px; }
+
+  .subhead, .why { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+  .why { gap: 16px; }
+
+  .impact { display: flex; align-items: baseline; gap: 16px; padding: 16px 20px; border-radius: 16px; background: var(--accent-soft); }
+  .impact-text { font-size: 18px; line-height: 1.6; }
+
+  .group { display: flex; flex-direction: column; gap: 16px; }
+  .audience { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .aud { padding: 24px; }
+  .rows li { display: flex; align-items: baseline; gap: 20px; padding: 14px 0; border-top: 1px solid var(--border); font-size: 18px; line-height: 1.6; }
+  .note { display: flex; flex-direction: column; gap: 8px; padding: 22px 24px; border-radius: 16px; border: 1px solid var(--border); background: var(--bg-surface); }
+
+  .table-wrap { overflow-x: auto; }
+  .dtable { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.6; }
+  .dtable thead th { text-align: left; padding: 0 16px 12px 0; color: var(--text-secondary); font-weight: 500; border-bottom: 1px solid var(--border); }
+  .dtable tbody th, .dtable td { text-align: left; vertical-align: top; padding: 16px 16px 16px 0; border-bottom: 1px solid var(--border); }
+  .dtable tbody th { font-weight: 600; width: 15%; }
+  .dtable td { color: var(--text-secondary); }
+  .dtable td.after { color: var(--text-primary); }
+
+  .overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin: 0; }
+  .overview div { display: flex; flex-direction: column; gap: 8px; }
+  .overview dd { margin: 0; font-weight: 400; }
+  .summary { display: flex; flex-direction: column; gap: 32px; }
+  .learn { display: flex; flex-direction: column; gap: 32px; margin-top: 16px; }
+
+  .visual { display: flex; flex-direction: column; gap: 32px; margin-top: 32px; }
+  .interaction { display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 20px; background: var(--bg-surface); border: 1px solid var(--border); }
+  .int-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .responsive { display: flex; flex-direction: column; gap: 80px; }
+  .pair { display: grid; grid-template-columns: 860fr 300fr; gap: 120px; align-items: start; }
+  .pair.flip { grid-template-columns: 300fr 860fr; }
+  .pair.flip .r-phone { order: -1; }
+  .r-desk, .r-phone { display: flex; flex-direction: column; gap: 12px; }
+
+  @media (max-width: 1100px) {
+    .steps, .steps.four { grid-template-columns: 1fr 1fr; }
+    .audience { grid-template-columns: 1fr; }
+    .overview { grid-template-columns: 1fr 1fr; }
+    .pair, .pair.flip { gap: 48px; }
+  }
+  @media (max-width: 760px) {
+    .steps, .steps.four { grid-template-columns: 1fr; }
+    .step, .aud { padding: 20px; }
+    .step-body, .steps.four .step-body, .rows li, .impact-text { font-size: 16px; }
+    .impact { flex-direction: column; gap: 4px; }
+    .nb-head { gap: 4px 12px; }
+    .numbered { margin-top: 8px; }
+    .interaction { padding: 16px; }
+    .pair, .pair.flip { grid-template-columns: 1fr; gap: 24px; }
+    .pair.flip .r-phone { order: 0; }
+    .r-phone { width: 64%; }
+    .responsive { gap: 56px; }
+    .dtable thead { display: none; }
+    .dtable, .dtable tbody, .dtable tr, .dtable th, .dtable td { display: block; width: 100%; }
+    .dtable tr { padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .dtable tbody th, .dtable td { border: 0; padding: 4px 0; width: 100%; }
+    .dtable td::before { content: attr(data-label); display: block; font-family: var(--font-mono); font-weight: 500; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+  }
+</style>

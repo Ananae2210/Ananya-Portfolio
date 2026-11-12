@@ -1,0 +1,94 @@
+---
+/* ConSolData "The Theme": colour swatches, type specimens and live
+   component samples in the site's own style. */
+import "@fontsource/manrope/700.css";
+import "@fontsource/jetbrains-mono/500.css";
+interface Props {
+  kind: "swatches" | "specimens" | "components";
+  colours?: { name: string; hex: string; use: string }[];
+  gradient?: string;
+  items?: { sample: string; font: string; role: string; family: string; size: number; weight?: number }[];
+  title?: string;
+}
+const { kind, colours = [], gradient, items = [], title } = Astro.props;
+---
+{kind === "swatches" && (
+  <div class="panel">
+    <h4 class="h4">Colour</h4>
+    <ul class="swatches">
+      {colours.map((c) => (
+        <li>
+          <span class="chip" style={`background:${c.hex}`}></span>
+          <span class="name">{c.name}</span>
+          <span class="label-s muted">{c.hex} · {c.use}</span>
+        </li>
+      ))}
+    </ul>
+    <span class="gradient" aria-hidden="true"></span>
+    <p class="label-s muted">{gradient}</p>
+  </div>
+)}
+
+{kind === "specimens" && (
+  <div class="panel">
+    <h4 class="h4">Typography</h4>
+    <div class="specimens">
+      {items.map((s) => (
+        <div class="spec">
+          <p class="sample" style={`font-family:${s.family};font-size:${s.size}px;font-weight:${s.weight ?? 400}`}>{s.sample}</p>
+          <p class="label-s muted">{s.font} · {s.role}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{kind === "components" && (
+  <div class="panel">
+    <h4 class="h4">{title}</h4>
+    <div class="samples">
+      <button class="cs-primary">Request a Demo</button>
+      <label class="cs-search"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg><input type="search" placeholder="Search" aria-label="Sample search field" /></label>
+      <button class="cs-ghost"><span class="play" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 1v8l7-4z" fill="currentColor" /></svg></span>Watch a 90-Second Overview</button>
+      <button class="cs-outline">Request a Demo</button>
+    </div>
+  </div>
+)}
+
+<style>
+  .panel { display: flex; flex-direction: column; gap: 20px; padding: 32px; border-radius: 20px; background: var(--bg-surface); border: 1px solid var(--border); }
+  .swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; }
+  .swatches li { display: flex; flex-direction: column; gap: 6px; }
+  .chip { height: 110px; border-radius: 12px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+  .name { font-weight: 600; font-size: 16px; line-height: 1.4; margin-top: 4px; }
+  .swatches .label-s { letter-spacing: 0.04em; text-transform: none; }
+  .gradient { height: 56px; border-radius: 12px; background: linear-gradient(90deg, #8b5cf6, #3b6ef5 50%, #00d4b4); }
+
+  .specimens { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
+  .spec { display: flex; flex-direction: column; gap: 12px; }
+  .sample { line-height: 1.3; color: var(--text-primary); white-space: pre-line; }
+
+  .samples { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 32px; border-radius: 14px; background: #111e33; }
+  .samples button, .cs-search { font-family: "Manrope", var(--font-body); font-weight: 700; font-size: 16px; line-height: 1.4; transition: transform 200ms var(--ease), background-color 200ms, border-color 200ms, box-shadow 200ms, color 200ms; }
+  .cs-primary { padding: 16px 28px; border-radius: 10px; background: #5b4fe5; color: #fff; }
+  .cs-primary:hover { background: #6d5ff5; transform: translateY(-2px); box-shadow: 0 10px 24px -8px rgba(109, 95, 245, 0.7); }
+  .cs-search { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; border: 1px solid #2e4a72; color: #8fa3c4; background: #0d1729; }
+  .cs-search:hover, .cs-search:focus-within { border-color: #3b6ef5; color: #e8f1ff; }
+  .cs-search input { width: 96px; border: 0; background: none; color: #e8f1ff; font: inherit; font-weight: 500; font-size: 14px; outline: none; }
+  .cs-search input::placeholder { color: #8fa3c4; }
+  .cs-ghost { display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 10px; border: 1px solid #2e4a72; color: #e8f1ff; }
+  .cs-ghost .play { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e8f1ff; color: #111e33; transition: background-color 200ms; }
+  .cs-ghost:hover { border-color: #00d4b4; }
+  .cs-ghost:hover .play { background: #00d4b4; }
+  .cs-outline { padding: 16px 28px; border-radius: 10px; border: 1px solid #8b5cf6; color: #e8f1ff; }
+  .cs-outline:hover { background: #8b5cf6; transform: translateY(-2px); }
+
+  @media (max-width: 1100px) { .swatches { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 760px) {
+    .panel { padding: 20px; }
+    .swatches { grid-template-columns: repeat(2, 1fr); }
+    .chip { height: 72px; }
+    .specimens { grid-template-columns: 1fr; }
+    .samples { padding: 20px; gap: 12px; }
+  }
+</style>

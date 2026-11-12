@@ -1,0 +1,31 @@
+---
+/* One dialog for every [data-zoom] trigger on the page. */
+---
+<dialog class="lightbox" data-lightbox aria-label="Screen preview">
+  <button class="close label-m" data-close aria-label="Close preview">Close ✕</button>
+  <div class="frame"><img data-lb-img alt="" /></div>
+</dialog>
+
+<script>
+  const dlg = document.querySelector<HTMLDialogElement>("[data-lightbox]")!;
+  const img = dlg.querySelector<HTMLImageElement>("[data-lb-img]")!;
+  document.querySelectorAll<HTMLElement>("[data-zoom]").forEach((t) => t.addEventListener("click", () => {
+    img.src = t.dataset.zoom!;
+    img.alt = t.dataset.zoomAlt ?? "";
+    dlg.showModal();
+    dlg.querySelector<HTMLElement>(".frame")!.scrollTop = 0;
+  }));
+  dlg.querySelector("[data-close]")!.addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => { if (e.target === dlg || (e.target as Element).classList.contains("frame")) dlg.close(); });
+</script>
+
+<style>
+  .lightbox { width: min(1400px, 94vw); max-height: 92vh; padding: 0; border: 0; background: transparent; overflow: visible; }
+  .lightbox::backdrop { background: rgba(5, 8, 7, 0.88); backdrop-filter: blur(4px); }
+  .lightbox[open] { animation: pop 300ms var(--ease); }
+  @keyframes pop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+  .frame { max-height: 86vh; overflow-y: auto; border-radius: 14px; }
+  .frame img { width: 100%; height: auto; border-radius: 14px; }
+  .close { display: block; margin: 0 0 12px auto; padding: 8px 16px; border-radius: 999px; background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary); }
+  .close:hover { border-color: var(--accent); }
+</style>

@@ -1,0 +1,109 @@
+---
+import Hotspots from "./Hotspots.astro";
+import type { Figure } from "../../data/case-studies/types";
+interface Props { figure: Figure; id: string; plain?: boolean }
+const { figure: f, id, plain = false } = Astro.props;
+const ratio = "ratio" in f && f.ratio ? f.ratio : 1000 / 520;
+---
+{f.kind === "framed" && (
+  <figure class="fig">
+    <div class="box framed" style={`aspect-ratio:${ratio}`}>
+      <div class="clip"><img src={f.image.src} alt={f.image.alt} width={f.image.w} height={f.image.h} loading="lazy" decoding="async" /></div>
+      {f.hotspots && <Hotspots spots={f.hotspots} id={id} />}
+    </div>
+    {f.note && <figcaption class="label-s muted">{f.note}</figcaption>}
+  </figure>
+)}
+
+{f.kind === "pair" && (
+  <figure class="fig">
+    <div class="box pair" style={`aspect-ratio:${ratio}`}>
+      {f.images.map((im) => <img src={im.src} alt={im.alt} width={im.w} height={im.h} loading="lazy" decoding="async" />)}
+    </div>
+  </figure>
+)}
+
+{f.kind === "beforeAfter" && (
+  <figure class="fig" data-ba>
+    <div class="ba-tabs" role="tablist" aria-label="Compare versions">
+      <button role="tab" aria-selected="false" data-ba-tab="before">{f.before.label}</button>
+      <button role="tab" aria-selected="true" data-ba-tab="after">{f.after.label}</button>
+    </div>
+    <div class="box framed" style={`aspect-ratio:${ratio}`}>
+      <div class="clip ba" data-show="after">
+        <img class="ba-before" src={f.before.src} alt={f.before.alt} width={f.before.w} height={f.before.h} loading="lazy" decoding="async" />
+        <img class="ba-after" src={f.after.src} alt={f.after.alt} width={f.after.w} height={f.after.h} loading="lazy" decoding="async" />
+      </div>
+    </div>
+  </figure>
+)}
+
+{f.kind === "phones" && (
+  <figure class="fig">
+    <div class="box phones">
+      {f.images.map((im) => (
+        <div class="ph">
+          <p class="label-s accent">{im.label}</p>
+          <img src={im.src} alt={im.alt} width={im.w} height={im.h} loading="lazy" decoding="async" />
+        </div>
+      ))}
+    </div>
+  </figure>
+)}
+
+{f.kind === "crop" && (
+  <figure class="fig">
+    <div class:list={["crop", { plain }]} style={`aspect-ratio:${1 / f.height}`}>
+      <div class="crop-clip"><img src={f.image.src} alt={f.image.alt} width={f.image.w} height={f.image.h} loading="lazy" decoding="async" style={`margin-top:${-f.top * 100}%`} /></div>
+      {f.hotspots && <Hotspots spots={f.hotspots} id={id} />}
+    </div>
+    {f.note && <figcaption class="label-s muted">{f.note}</figcaption>}
+  </figure>
+)}
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-ba]").forEach((fig) => {
+    const box = fig.querySelector<HTMLElement>(".ba")!;
+    const tabs = [...fig.querySelectorAll<HTMLElement>("[data-ba-tab]")];
+    tabs.forEach((t) => t.addEventListener("click", () => {
+      box.dataset.show = t.dataset.baTab;
+      tabs.forEach((x) => x.setAttribute("aria-selected", String(x === t)));
+    }));
+  });
+</script>
+
+<style>
+  .fig { display: flex; flex-direction: column; gap: 16px; }
+  .box { position: relative; border-radius: 24px; background: linear-gradient(160deg, #18211f, #0f1513 70%); border: 1px solid var(--border); }
+  .clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; padding: 4% 4% 0; }
+  .clip > img { width: 100%; height: auto; border-radius: 10px 10px 0 0; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8); }
+
+  .pair { overflow: hidden; padding: 4%; display: grid; grid-template-columns: 1fr 1fr; gap: 2.4%; align-items: start; }
+  .pair img { width: 100%; height: auto; border-radius: 8px; box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.8); }
+
+  .ba-tabs { display: flex; gap: 4px; align-self: flex-start; padding: 4px; border-radius: 999px; background: var(--bg-surface); border: 1px solid var(--border); }
+  .ba-tabs button { padding: 8px 16px; border-radius: 999px; font-family: var(--font-mono); font-weight: 500; font-size: var(--type-label-s); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); transition: background-color 200ms, color 200ms; }
+  .ba-tabs button[aria-selected="true"] { background: var(--accent); color: var(--text-on-accent); }
+  .ba { display: grid; align-items: start; }
+  .ba img { grid-area: 1 / 1; transition: opacity 400ms var(--ease); }
+  .ba[data-show="after"] .ba-before, .ba[data-show="before"] .ba-after { opacity: 0; }
+
+  .phones { padding: 40px; display: flex; justify-content: center; gap: 40px; }
+  .ph { display: flex; flex-direction: column; gap: 12px; width: min(300px, 44%); }
+  .ph img { width: 100%; height: auto; border-radius: 24px; border: 1px solid var(--border); }
+
+  .crop { position: relative; border-radius: 16px; border: 1px solid var(--border); background: #fff; }
+  .crop-clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+  .crop-clip > img { width: 100%; height: auto; max-width: none; }
+  .crop.plain { border-radius: 12px; }
+
+  figcaption { text-align: left; }
+
+  @media (max-width: 760px) {
+    .box { border-radius: 16px; }
+    .phones { padding: 20px 16px; gap: 16px; }
+    .ph { width: 50%; }
+    .ph img { border-radius: 14px; }
+    .ba-tabs button { padding: 8px 12px; }
+  }
+</style>

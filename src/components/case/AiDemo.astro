@@ -1,0 +1,151 @@
+---
+/* Cohort Builder: the plain-English AI step, recreated with sample data.
+   Idle → Parsing → Results (remove criteria, accept) → Accepted. */
+const cats = ["Colorectal Cancer", "Breast Cancer", "Blood Cancer", "Maternal Health", "Diabetes Management", "Cardiovascular Disease"];
+const inclusion = [
+  ["Condition", "Diagnosis: breast cancer"],
+  ["Time period", "Diagnosed Jan – Jun 2024"],
+  ["Treatment", "Received neoadjuvant chemotherapy"],
+  ["Lab / Biomarker", "HER2-positive status"],
+];
+const exclusion = [
+  ["Exclusion", "Metastatic disease"],
+  ["Exclusion", "Prior cancer history"],
+];
+---
+<div class="demo-wrap">
+  <p class="label-s muted">Interactive concept · the AI step, recreated with sample data — click “Suggest criteria”</p>
+  <div class="demo" data-demo data-state="idle">
+    <div class="d-head">
+      <p class="d-title">Custom Cohort Builder</p>
+      <p class="d-sub">Define your cohort using natural language</p>
+    </div>
+    <div class="d-body">
+      <p class="d-label" id="cat-label">Select Clinical Category*</p>
+      <div class="cats" role="radiogroup" aria-labelledby="cat-label">
+        {cats.map((c) => <button role="radio" aria-checked={c === "Breast Cancer" ? "true" : "false"} class="cat" data-cat>{c}</button>)}
+      </div>
+      <label class="d-label" for="demo-input">Describe your cohort*</label>
+      <textarea id="demo-input" class="input" rows="2" data-input>All breast cancer patients diagnosed between January and June 2024 who received neoadjuvant chemotherapy and are HER2-positive, excluding patients with metastatic disease or prior cancer history.</textarea>
+      <p class="status" aria-live="polite" data-status>Our AI will parse your statement and suggest structured criteria.</p>
+
+      <div class="results" data-results hidden>
+        <div class="group">
+          <p class="g-title"><span class="ok">✓</span> Inclusion criteria (<span data-count="in">4</span>)</p>
+          <ul>
+            {inclusion.map(([k, v]) => <li data-crit="in"><span class="k">{k}</span><span class="v">{v}</span><button class="rm" aria-label={`Remove ${v}`}>×</button></li>)}
+          </ul>
+        </div>
+        <div class="group">
+          <p class="g-title"><span class="no">✕</span> Exclusion criteria (<span data-count="ex">2</span>)</p>
+          <ul>
+            {exclusion.map(([k, v]) => <li data-crit="ex"><span class="k">{k}</span><span class="v">{v}</span><button class="rm" aria-label={`Remove ${v}`}>×</button></li>)}
+          </ul>
+        </div>
+        <p class="ready" data-ready hidden><span class="ok">✓</span> <span data-ready-text></span></p>
+      </div>
+
+      <div class="actions">
+        <button class="btn-d ghost" data-act="edit" hidden>Edit description</button>
+        <button class="btn-d" data-act="suggest">Suggest criteria</button>
+        <button class="btn-d" data-act="accept" hidden>Accept criteria</button>
+        <button class="btn-d ghost" data-act="reset" hidden>Start over</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-demo]").forEach((demo) => {
+    const status = demo.querySelector<HTMLElement>("[data-status]")!;
+    const results = demo.querySelector<HTMLElement>("[data-results]")!;
+    const ready = demo.querySelector<HTMLElement>("[data-ready]")!;
+    const readyText = demo.querySelector<HTMLElement>("[data-ready-text]")!;
+    const input = demo.querySelector<HTMLTextAreaElement>("[data-input]")!;
+    const act = (k: string) => demo.querySelector<HTMLElement>(`[data-act="${k}"]`)!;
+    const original = results.innerHTML;
+    const idleText = status.textContent;
+    const counts = () => {
+      const inc = results.querySelectorAll('[data-crit="in"]').length, exc = results.querySelectorAll('[data-crit="ex"]').length;
+      results.querySelector('[data-count="in"]')!.textContent = String(inc);
+      results.querySelector('[data-count="ex"]')!.textContent = String(exc);
+      return [inc, exc];
+    };
+    const bindRemove = () => results.querySelectorAll<HTMLElement>(".rm").forEach((b) => b.addEventListener("click", () => {
+      b.closest("li")!.remove();
+      const [i, e] = counts();
+      status.textContent = `Found ${i + e} criteria in your description`;
+    }));
+    const set = (state: string) => {
+      demo.dataset.state = state;
+      act("suggest").hidden = state !== "idle" && state !== "parsing";
+      (act("suggest") as HTMLButtonElement).disabled = state === "parsing";
+      act("edit").hidden = state !== "results";
+      act("accept").hidden = state !== "results";
+      act("reset").hidden = state !== "accepted";
+      results.hidden = state === "idle" || state === "parsing";
+      ready.hidden = state !== "accepted";
+      input.readOnly = state !== "idle";
+    };
+    demo.querySelectorAll<HTMLElement>("[data-cat]").forEach((c) => c.addEventListener("click", () => {
+      if (demo.dataset.state !== "idle") return;
+      demo.querySelectorAll("[data-cat]").forEach((x) => x.setAttribute("aria-checked", String(x === c)));
+    }));
+    act("suggest").addEventListener("click", () => {
+      set("parsing");
+      status.textContent = "Reading your description…";
+      window.setTimeout(() => { set("results"); const [i, e] = counts(); status.textContent = `Found ${i + e} criteria in your description`; }, 1400);
+    });
+    act("edit").addEventListener("click", () => { results.innerHTML = original; bindRemove(); set("idle"); status.textContent = idleText; input.focus(); });
+    act("accept").addEventListener("click", () => { const [i, e] = counts(); readyText.textContent = `Criteria ready: ${i} inclusion · ${e} exclusion. Next, name the cohort and set its dates.`; set("accepted"); });
+    act("reset").addEventListener("click", () => { results.innerHTML = original; bindRemove(); set("idle"); status.textContent = idleText; });
+    bindRemove();
+  });
+</script>
+
+<style>
+  .demo-wrap { display: flex; flex-direction: column; gap: 16px; }
+  .demo { border-radius: 20px; overflow: hidden; background: #fff; color: #10141a; font-family: var(--font-body); }
+  .d-head { padding: 20px 24px; background: #eef2f3; }
+  .d-title { font-size: 20px; line-height: 1.4; }
+  .d-sub { font-size: 12px; line-height: 1.6; color: #4a5560; }
+  .d-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .d-label { font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .cats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat { padding: 6px 12px; border-radius: 2px; background: #f2f4f6; border: 1px solid transparent; font-size: 14px; line-height: 1.6; color: #3d4752; transition: background-color 150ms, border-color 150ms; }
+  .cat:hover { background: #e8ebef; }
+  .cat[aria-checked="true"] { background: #e6e1fb; border-color: #8b7be8; color: #10141a; }
+  .demo:not([data-state="idle"]) .cat { cursor: default; }
+  .input { width: 100%; resize: vertical; min-height: 74px; padding: 10px 12px; border: 1px solid #9aa4ad; border-radius: 4px; font: inherit; font-size: 14px; line-height: 1.6; color: #10141a; background: #fff; }
+  .input:focus { outline: 2px solid #8b7be8; outline-offset: 1px; }
+  .status { font-size: 12px; line-height: 1.6; color: #4a5560; }
+  .demo[data-state="parsing"] .status::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; border: 2px solid #8b7be8; border-right-color: transparent; vertical-align: -1px; animation: spin 700ms linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding-top: 4px; }
+  .group { border: 1px solid #e1e5e9; border-radius: 6px; padding: 14px; }
+  .g-title { font-size: 14px; font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
+  .ok { color: #2f9e44; }
+  .no { color: #d6336c; }
+  .group ul { display: flex; flex-direction: column; gap: 8px; }
+  .group li { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; padding: 8px 10px; border-radius: 4px; background: #f6f7f9; animation: rise 400ms var(--ease) both; }
+  .group li:nth-child(2) { animation-delay: 80ms; } .group li:nth-child(3) { animation-delay: 160ms; } .group li:nth-child(4) { animation-delay: 240ms; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .k { grid-column: 1; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7682; }
+  .v { grid-column: 1; font-size: 14px; line-height: 1.6; }
+  .rm { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 24px; height: 24px; border-radius: 4px; color: #6b7682; font-size: 18px; }
+  .rm:hover { background: #e8ebef; color: #10141a; }
+  .demo[data-state="accepted"] .rm { display: none; }
+  .ready { grid-column: 1 / -1; font-size: 14px; line-height: 1.6; padding: 10px 12px; border-radius: 4px; background: #e9f6ec; }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .btn-d { padding: 8px 14px; border-radius: 4px; background: #10141a; color: #fff; font-size: 14px; line-height: 1.4; transition: background-color 150ms; }
+  .btn-d:hover { background: #2a3340; }
+  .btn-d:disabled { opacity: 0.6; cursor: progress; }
+  .btn-d.ghost { background: #fff; color: #10141a; border: 1px solid #10141a; }
+  .btn-d.ghost:hover { background: #f2f4f6; }
+  .demo :focus-visible { outline-color: #8b7be8; }
+
+  @media (max-width: 760px) {
+    .results { grid-template-columns: 1fr; }
+    .d-head, .d-body { padding-left: 16px; padding-right: 16px; }
+  }
+</style>

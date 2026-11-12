@@ -111,6 +111,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 .page { max-width: var(--max-w); margin: 0 auto; }
 .px { padding-left: var(--page-x); padding-right: var(--page-x); }
+[hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- type styles ---------- */

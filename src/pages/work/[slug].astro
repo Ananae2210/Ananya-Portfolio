@@ -1,16 +1,123 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { projects } from "../../data/projects";
+import { caseStudies } from "../../data/case-studies";
+import type { CaseStudy } from "../../data/case-studies/types";
+import HeroTour from "../../components/case/HeroTour.astro";
+import HeroScroll from "../../components/case/HeroScroll.astro";
+import HeroSite from "../../components/case/HeroSite.astro";
+import Blocks from "../../components/case/Blocks.astro";
+import Showcase from "../../components/case/Showcase.astro";
+import Lightbox from "../../components/case/Lightbox.astro";
+
 export function getStaticPaths() {
-  return projects.map((p) => ({ params: { slug: p.slug }, props: { p } }));
+  return caseStudies.map((c) => ({ params: { slug: c.slug }, props: { c } }));
 }
-const { p } = Astro.props;
+const { c } = Astro.props as { c: CaseStudy };
 ---
-<Base title={p.title} active="work">
-  <section class="page px" style="padding-top:96px;padding-bottom:160px;display:flex;flex-direction:column;gap:32px;align-items:flex-start">
-    <a class="label-m muted" href="/work/">← All work</a>
-    <h1 class="display d-xl">{p.title}</h1>
-    <p class="body-l muted" style="max-width:720px">{p.summary}</p>
-    <p class="label-m accent">Full case study coming soon</p>
+<Base title={c.title} description={c.description} active="work">
+  <header class="hero page px">
+    <a class="back label-m muted" href="/work/">← All work</a>
+    <div class="tags">{c.tags.map((t) => <span class="tag">{t}</span>)}</div>
+    <h1 class="display d-xl title">{c.titleLines.map((l) => <span>{l}</span>)}</h1>
+    <p class="body-l muted mission">{c.mission}</p>
+    <div class="hero-visual">
+      {c.hero.kind === "tour" && <HeroTour steps={c.hero.steps} />}
+      {c.hero.kind === "scroll" && <HeroScroll image={c.hero.image} hint={c.hero.hint} />}
+      {c.hero.kind === "site" && <HeroSite pages={c.hero.pages} hint={c.hero.hint} />}
+    </div>
+  </header>
+
+  <div class:list={["body page px", { "with-toc": c.toc }]}>
+    {c.toc && (
+      <nav class="toc" aria-label="On this page">
+        <p class="label-s muted">On this page</p>
+        <ol>
+          {c.sections.map((s) => <li><a href={`#${s.id}`} data-toc={s.id}>{s.toc}</a></li>)}
+        </ol>
+      </nav>
+    )}
+    <div class="sections">
+      {c.sections.map((s) => (
+        <section class="cs-section" id={s.id} aria-label={s.label}>
+          <p class="section-label label-m muted">{s.label}</p>
+          <Blocks blocks={s.blocks} sectionId={s.id} />
+        </section>
+      ))}
+    </div>
+  </div>
+
+  {c.showcase && <Showcase showcase={c.showcase} />}
+
+  <section class="next page px">
+    <a class="next-card" href={`/work/${c.next.slug}/`}>
+      <span class="next-text">
+        <span class="label-m accent">Next project</span>
+        <span class="display d-l next-title">{c.next.title}</span>
+      </span>
+      <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg></span>
+    </a>
   </section>
+
+  <Lightbox />
 </Base>
+
+<script>
+  const links = [...document.querySelectorAll<HTMLAnchorElement>("[data-toc]")];
+  if (links.length) {
+    const byId = new Map(links.map((a) => [a.dataset.toc, a]));
+    const visible = new Set<string>();
+    const update = () => {
+      const first = links.find((a) => visible.has(a.dataset.toc!));
+      if (!first) return;
+      links.forEach((a) => a.toggleAttribute("aria-current", a === first));
+    };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { const id = (e.target as HTMLElement).id; if (e.isIntersecting) visible.add(id); else visible.delete(id); });
+      update();
+    }, { rootMargin: "-30% 0px -60% 0px" });
+    document.querySelectorAll<HTMLElement>(".cs-section").forEach((s) => byId.has(s.id) && io.observe(s));
+    links[0].setAttribute("aria-current", "true");
+  }
+</script>
+
+<style>
+  .hero { display: flex; flex-direction: column; align-items: flex-start; gap: 32px; padding-top: 80px; }
+  .back { transition: color 200ms; }
+  .back:hover { color: var(--accent); }
+  .title { display: flex; flex-direction: column; }
+  .mission { max-width: 720px; margin-top: -8px; }
+  .hero-visual { width: 100%; margin-top: 40px; }
+
+  .body { padding-top: var(--section-l); }
+  .body.with-toc { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 80px; }
+  .toc { position: sticky; top: 120px; align-self: start; display: flex; flex-direction: column; gap: 16px; }
+  .toc ol { display: flex; flex-direction: column; gap: 4px; }
+  .toc a { position: relative; display: block; padding: 4px 0; font-family: var(--font-mono); font-weight: 500; font-size: 14px; line-height: 1.4; letter-spacing: 0.04em; color: var(--text-secondary); transition: color 200ms, padding-left 250ms var(--ease); }
+  .toc a::before { content: ""; position: absolute; left: 0; top: 50%; width: 0; height: 2px; background: var(--accent); transition: width 250ms var(--ease); }
+  .toc a:hover { color: var(--text-primary); }
+  .toc a[aria-current] { color: var(--accent); padding-left: 26px; }
+  .toc a[aria-current]::before { width: 16px; }
+
+  .sections { display: flex; flex-direction: column; gap: var(--section-m); min-width: 0; }
+  .cs-section { display: flex; flex-direction: column; gap: 40px; scroll-margin-top: 100px; }
+
+  .next { padding-top: var(--section-m); padding-bottom: var(--section-m); }
+  .next-card { display: flex; justify-content: space-between; align-items: center; gap: 32px; padding: 56px 64px; border-radius: 24px; background: var(--bg-surface); border: 1px solid var(--border); transition: border-color 300ms; }
+  .next-text { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .arrow { flex: none; display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; background: var(--accent); color: var(--text-on-accent); transition: transform 300ms var(--ease); }
+  .next-card:hover { border-color: var(--accent); }
+  .arrow svg { width: 40%; height: 40%; }
+  .next-card:hover .arrow { transform: translateX(8px); }
+
+  @media (max-width: 1100px) {
+    .body.with-toc { display: block; }
+    .toc { display: none; }
+  }
+  @media (max-width: 760px) {
+    .hero { gap: 24px; padding-top: 48px; }
+    .hero-visual { margin-top: 16px; }
+    .cs-section { gap: 28px; }
+    .next-card { padding: 28px 24px; border-radius: 20px; }
+    .arrow { width: 56px; height: 56px; }
+  }
+</style>

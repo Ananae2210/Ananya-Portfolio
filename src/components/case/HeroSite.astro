@@ -1,0 +1,68 @@
+---
+/* Site viewer: tabs switch the page shown in a scrollable laptop and phone. */
+import Laptop from "./Laptop.astro";
+import Phone from "./Phone.astro";
+import type { Img } from "../../data/case-studies/types";
+interface Props { pages: { label: string; desktop: Img; phone: Img }[]; hint: string }
+const { pages, hint } = Astro.props;
+---
+<div class="viewer" data-viewer>
+  <div class="tabs" role="tablist" aria-label="Site pages">
+    {pages.map((p, i) => (
+      <button class="tab" role="tab" aria-selected={i === 0 ? "true" : "false"} data-tab={i}>{p.label}</button>
+    ))}
+  </div>
+  <div class="stage">
+    <div class="lap">
+      <Laptop>
+        {pages.map((p, i) => (
+          <div class="scroller" data-pane={i} hidden={i !== 0} tabindex="0" aria-label={`${p.desktop.alt} (scrollable)`}>
+            <img src={p.desktop.src} alt={p.desktop.alt} width={p.desktop.w} height={p.desktop.h} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+          </div>
+        ))}
+      </Laptop>
+    </div>
+    <div class="ph">
+      <Phone>
+        {pages.map((p, i) => (
+          <div class="scroller" data-pane={i} hidden={i !== 0} tabindex="0" aria-label={`${p.phone.alt} (scrollable)`}>
+            <img src={p.phone.src} alt={p.phone.alt} width={p.phone.w} height={p.phone.h} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+          </div>
+        ))}
+      </Phone>
+    </div>
+  </div>
+  <p class="label-s muted hint">{hint}</p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-viewer]").forEach((v) => {
+    const tabs = [...v.querySelectorAll<HTMLElement>("[data-tab]")];
+    tabs.forEach((t) => t.addEventListener("click", () => {
+      const k = t.dataset.tab;
+      tabs.forEach((x) => x.setAttribute("aria-selected", String(x === t)));
+      v.querySelectorAll<HTMLElement>("[data-pane]").forEach((p) => { p.hidden = p.dataset.pane !== k; if (!p.hidden) p.scrollTop = 0; });
+    }));
+  });
+</script>
+
+<style>
+  .viewer { display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--bg-surface); border: 1px solid var(--border); max-width: 100%; overflow-x: auto; }
+  .tab { padding: 8px 18px; border-radius: 999px; font-family: var(--font-mono); font-weight: 500; font-size: var(--type-label-m); letter-spacing: 0.06em; color: var(--text-secondary); white-space: nowrap; transition: color 200ms, background-color 200ms; }
+  .tab:hover { color: var(--text-primary); }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--text-on-accent); }
+  .stage { position: relative; width: 100%; padding-right: 8%; }
+  .lap { width: 100%; }
+  .ph { position: absolute; right: 0; bottom: 4%; width: 22.6%; max-width: 290px; }
+  .scroller { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .scroller img { width: 100%; height: auto; }
+  .hint { text-align: center; }
+
+  @media (max-width: 760px) {
+    .stage { padding-right: 0; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+    .ph { position: relative; right: auto; bottom: auto; width: 62%; }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; border-radius: 20px; }
+    .tab { padding: 8px 10px; letter-spacing: 0.02em; text-align: center; }
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+/* Cohort Builder: the route map. One entry, three routes, each node a
+   screen thumbnail; hover shows a bigger preview, click zooms. */
+import { landing, stdCategory, stdCohorts, stdCustomize, customCategory, customDescribe2, request } from "../../data/case-studies/cohort";
+import type { Img } from "../../data/case-studies/types";
+
+type Node = { title: string; count: number; img: Img };
+const root: Node = { title: "Choose a route", count: 1, img: landing };
+const routes: { label: string; nodes: Node[] }[] = [
+  { label: "Standard", nodes: [
+    { title: "Clinical category", count: 1, img: stdCategory },
+    { title: "Available cohorts", count: 6, img: stdCohorts },
+    { title: "Customize & create", count: 8, img: stdCustomize },
+  ] },
+  { label: "Custom", nodes: [
+    { title: "Clinical category", count: 1, img: customCategory },
+    { title: "Describe in plain English", count: 6, img: customDescribe2 },
+  ] },
+  { label: "Request", nodes: [{ title: "Request a cohort", count: 1, img: request }] },
+];
+---
+<div class="map">
+  <div class="head">
+    <h3 class="h3">How the routes connect</h3>
+    <p class="label-s muted">1 entry · 3 routes · 24 screens — hover a node to preview</p>
+  </div>
+
+  <div class="tree">
+    <div class="root">
+      <button class="node" data-zoom={root.img.src} data-zoom-alt={root.img.alt}>
+        <span class="thumb"><img src={root.img.src} alt="" width={root.img.w} height={root.img.h} loading="lazy" decoding="async" /></span>
+        <span class="meta"><span class="t">{root.title}</span><span class="n label-s">×{root.count}</span></span>
+        <span class="peek" aria-hidden="true"><img src={root.img.src} alt="" loading="lazy" decoding="async" /></span>
+      </button>
+    </div>
+    <div class="branch" aria-hidden="true"></div>
+    <div class="routes">
+      {routes.map((r) => (
+        <div class="route">
+          <span class="pill label-s">{r.label}</span>
+          {r.nodes.map((n) => (
+            <button class="node" data-zoom={n.img.src} data-zoom-alt={n.img.alt}>
+              <span class="thumb"><img src={n.img.src} alt="" width={n.img.w} height={n.img.h} loading="lazy" decoding="async" /></span>
+              <span class="meta"><span class="t">{n.title}</span><span class="n label-s">×{n.count}</span></span>
+              <span class="peek" aria-hidden="true"><img src={n.img.src} alt="" loading="lazy" decoding="async" /></span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .map { display: flex; flex-direction: column; gap: 40px; }
+  .head { display: flex; flex-direction: column; gap: 12px; }
+  .tree { --line: #2c3835; display: flex; flex-direction: column; }
+  .root { display: flex; justify-content: center; }
+  .root .node { width: 31.7%; }
+  .branch { position: relative; height: 32px; }
+  .branch::before { content: ""; position: absolute; left: 50%; top: 0; height: 100%; width: 2px; background: var(--line); }
+  .branch::after { content: ""; position: absolute; left: 15.85%; right: 15.85%; bottom: 0; height: 2px; background: var(--line); }
+  .routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.45%; align-items: start; }
+  .route { position: relative; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .route::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 40px; width: 2px; margin-left: -1px; background: var(--line); z-index: 0; }
+  .pill { position: relative; z-index: 1; margin-top: 16px; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--accent); background: var(--bg-base); color: var(--text-primary); }
+  .node { position: relative; z-index: 1; width: 100%; padding: 12px; border-radius: 16px; background: var(--bg-surface); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; text-align: left; transition: border-color 200ms, transform 250ms var(--ease); }
+  .node:hover, .node:focus-visible { border-color: var(--accent); }
+  .thumb { display: block; aspect-ratio: 291 / 140; overflow: hidden; border-radius: 8px; background: #fff; }
+  .thumb img { width: 100%; height: auto; }
+  .meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 2px; }
+  .t { font-size: 20px; font-weight: 600; line-height: 1.4; }
+  .n { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .peek { position: absolute; z-index: 5; left: 50%; bottom: calc(100% + 12px); width: 460px; padding: 6px; border-radius: 12px; background: var(--bg-raised); border: 1px solid var(--accent); box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.9); transform: translate(-50%, 8px); opacity: 0; pointer-events: none; transition: opacity 200ms, transform 250ms var(--ease); }
+  .peek img { width: 100%; height: auto; border-radius: 8px; }
+  @media (hover: hover) and (min-width: 1101px) {
+    .node:hover { z-index: 6; }
+    .node:hover .peek { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  @media (max-width: 1100px) {
+    .t { font-size: 16px; }
+    .node { padding: 8px; gap: 8px; border-radius: 12px; }
+  }
+  @media (max-width: 760px) {
+    .root .node { width: 100%; }
+    .branch::after { display: none; }
+    .routes { grid-template-columns: 1fr; gap: 0; }
+    .route { gap: 12px; padding-bottom: 24px; }
+    .route::before { bottom: 24px; }
+  }
+</style>

@@ -1,0 +1,38 @@
+---
+/* CSS laptop: lid with bezel and camera, a 874×540 display, hinge and
+   silver base. Whatever is slotted fills the display. */
+interface Props { class?: string; label?: string }
+const { class: cls, label } = Astro.props;
+---
+<div class:list={["laptop", cls]}>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="lid">
+    <span class="camera" aria-hidden="true"></span>
+    <div class="display" aria-label={label} role={label ? "img" : undefined}>
+      <slot />
+    </div>
+  </div>
+  <div class="hinge" aria-hidden="true"></div>
+  <div class="base" aria-hidden="true"><span class="notch"></span></div>
+  <div class="shadow" aria-hidden="true"></div>
+</div>
+
+<style>
+  .laptop { position: relative; width: 100%; max-width: 1060px; margin: 0 auto; }
+  .glow { position: absolute; left: 6%; right: 6%; top: 8%; bottom: 0; background: radial-gradient(closest-side, rgba(0, 212, 180, 0.22), transparent); filter: blur(40px); pointer-events: none; }
+  .lid {
+    position: relative; width: 84.9%; margin: 0 auto;
+    background: #0c0e0e; border-radius: clamp(10px, 2vw, 22px) clamp(10px, 2vw, 22px) 4px 4px;
+    padding: 1.6% 1.45% 1.45%;
+    box-shadow: inset 0 0 0 1.5px #8e9594, inset 0 0 0 3px #1b1f1e;
+  }
+  .camera { position: absolute; top: 0.6%; left: 50%; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #2a3230; }
+  .display { position: relative; aspect-ratio: 874 / 540; overflow: hidden; background: #fff; border-radius: 3px; }
+  .hinge { width: 81%; height: 6px; margin: 0 auto; background: linear-gradient(#3a3f3e, #1c201f); border-radius: 0 0 4px 4px; }
+  .base {
+    position: relative; width: 100%; aspect-ratio: 1060 / 20; min-height: 10px;
+    background: linear-gradient(#eef1f1, #b9bfbe 55%, #8c9291); border-radius: 2px 2px 50% 50% / 2px 2px 100% 100%;
+  }
+  .notch { position: absolute; left: 50%; top: 0; width: 14%; height: 35%; transform: translateX(-50%); background: linear-gradient(#a8aead, #c9cecd); border-radius: 0 0 8px 8px; }
+  .shadow { width: 96%; height: 30px; margin: -6px auto 0; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), transparent); }
+</style>

@@ -1,0 +1,21 @@
+---
+/* A laptop whose screen scrolls through a full-page capture. */
+import Laptop from "./Laptop.astro";
+import type { Img } from "../../data/case-studies/types";
+interface Props { image: Img; hint?: string }
+const { image, hint = "Scroll inside the screen ↕" } = Astro.props;
+---
+<div class="hero-scroll">
+  <Laptop>
+    <div class="scroller" tabindex="0" aria-label={`${image.alt} (scrollable)`}>
+      <img src={image.src} alt={image.alt} width={image.w} height={image.h} loading="eager" decoding="async" />
+    </div>
+  </Laptop>
+  <p class="label-s muted">{hint}</p>
+</div>
+
+<style>
+  .hero-scroll { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .scroller { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.35) transparent; }
+  .scroller img { width: 100%; height: auto; }
+</style>

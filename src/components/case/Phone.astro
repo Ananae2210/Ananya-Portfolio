@@ -1,0 +1,19 @@
+---
+/* CSS phone: rounded frame with a dynamic island. Slot fills the screen. */
+interface Props { class?: string }
+const { class: cls } = Astro.props;
+---
+<div class:list={["phone", cls]}>
+  <div class="screen"><slot /></div>
+  <span class="island" aria-hidden="true"></span>
+</div>
+
+<style>
+  .phone {
+    position: relative; width: 100%; aspect-ratio: 290 / 600;
+    padding: 3.4%; border-radius: 15% / 7.3%;
+    background: #0b0d0d; box-shadow: inset 0 0 0 1.5px #59605f, 0 40px 80px -30px rgba(0, 0, 0, 0.9);
+  }
+  .screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 12% / 5.8%; background: #fff; }
+  .island { position: absolute; top: 3.6%; left: 50%; width: 29%; height: 4%; transform: translateX(-50%); background: #000; border-radius: 999px; }
+</style>

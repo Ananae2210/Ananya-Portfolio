@@ -1,0 +1,107 @@
+---
+/* Autoplay tour: four screens crossfade inside the laptop while a cursor
+   moves to what gets clicked. The pill below plays/pauses and jumps. */
+import Laptop from "./Laptop.astro";
+import type { Img } from "../../data/case-studies/types";
+interface Props { steps: { image: Img; label: string; cursor: [number, number] }[] }
+const { steps } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, "0");
+---
+<div class="tour" data-tour>
+  <Laptop label="Autoplaying tour of the product">
+    {steps.map((s, i) => (
+      <img class:list={["shot", { on: i === 0 }]} src={s.image.src} alt={i === 0 ? s.image.alt : ""} width={s.image.w} height={s.image.h} loading={i === 0 ? "eager" : "lazy"} decoding="async" data-shot={i} />
+    ))}
+    <span class="cursor" data-cursor style={`left:${steps[0].cursor[0]}%;top:${steps[0].cursor[1]}%`} aria-hidden="true">
+      <span class="ring"></span>
+      <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 2l16 9.5-7 1.6-3.6 6.9z" fill="#0a0f0e" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" /></svg>
+    </span>
+  </Laptop>
+
+  <div class="controls">
+    <button class="play" data-play aria-label="Pause tour">
+      <svg class="i-pause" width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="1" width="3.5" height="12" rx="1" fill="currentColor" /><rect x="8.5" y="1" width="3.5" height="12" rx="1" fill="currentColor" /></svg>
+      <svg class="i-play" width="14" height="14" viewBox="0 0 14 14"><path d="M3 1.5v11l9.5-5.5z" fill="currentColor" /></svg>
+    </button>
+    <div class="segs" role="tablist" aria-label="Tour steps">
+      {steps.map((s, i) => (
+        <button class:list={["seg", { on: i === 0 }]} role="tab" aria-selected={i === 0 ? "true" : "false"} aria-label={`Step ${i + 1}: ${s.label}`} data-seg={i}><span></span></button>
+      ))}
+    </div>
+    <span class="count label-s"><span data-count>01</span> / {pad(steps.length)}</span>
+    <span class="step-label" data-label aria-live="polite">{steps[0].label}</span>
+  </div>
+  <script type="application/json" data-steps set:html={JSON.stringify(steps.map((s) => ({ label: s.label, cursor: s.cursor })))} />
+</div>
+
+<script>
+  const STEP = 3200;
+  document.querySelectorAll<HTMLElement>("[data-tour]").forEach((tour) => {
+    const steps: { label: string; cursor: [number, number] }[] = JSON.parse(tour.querySelector("[data-steps]")!.textContent!);
+    const shots = [...tour.querySelectorAll<HTMLElement>("[data-shot]")];
+    const segs = [...tour.querySelectorAll<HTMLElement>("[data-seg]")];
+    const cursor = tour.querySelector<HTMLElement>("[data-cursor]")!;
+    const label = tour.querySelector<HTMLElement>("[data-label]")!;
+    const count = tour.querySelector<HTMLElement>("[data-count]")!;
+    const play = tour.querySelector<HTMLButtonElement>("[data-play]")!;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let i = 0, playing = !reduced, visible = false, timer: number | undefined;
+
+    const render = () => {
+      shots.forEach((s, k) => s.classList.toggle("on", k === i));
+      segs.forEach((s, k) => { s.classList.toggle("on", k === i); s.classList.toggle("done", k < i); s.setAttribute("aria-selected", String(k === i)); });
+      const [x, y] = steps[i].cursor;
+      cursor.style.left = `${x}%`; cursor.style.top = `${y}%`;
+      cursor.classList.remove("click"); void cursor.offsetWidth; cursor.classList.add("click");
+      label.textContent = steps[i].label;
+      count.textContent = String(i + 1).padStart(2, "0");
+    };
+    const schedule = () => {
+      window.clearTimeout(timer);
+      tour.classList.toggle("playing", playing && visible);
+      segs.forEach((s) => s.classList.remove("timing")); void tour.offsetWidth;
+      if (playing && visible) { segs[i].classList.add("timing"); timer = window.setTimeout(() => go(i + 1), STEP); }
+    };
+    const go = (k: number) => { i = (k + steps.length) % steps.length; render(); schedule(); };
+    tour.style.setProperty("--step", `${STEP}ms`);
+    segs.forEach((s) => s.addEventListener("click", () => go(Number(s.dataset.seg))));
+    play.addEventListener("click", () => { playing = !playing; play.setAttribute("aria-label", playing ? "Pause tour" : "Play tour"); schedule(); });
+    if (!playing) play.setAttribute("aria-label", "Play tour");
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; schedule(); }).observe(tour);
+  });
+</script>
+
+<style>
+  .tour { display: flex; flex-direction: column; align-items: center; gap: 40px; }
+  .shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity 600ms var(--ease); }
+  .shot.on { opacity: 1; }
+  .cursor { position: absolute; z-index: 2; width: 22px; height: 22px; transition: left 900ms var(--ease), top 900ms var(--ease); }
+  .cursor svg { position: relative; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4)); }
+  .ring { position: absolute; left: -12px; top: -12px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--accent); background: rgba(0, 212, 180, 0.2); opacity: 0; }
+  .cursor.click .ring { animation: click 1400ms 900ms var(--ease) both; }
+  @keyframes click { 0% { opacity: 0; transform: scale(0.4); } 30% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.6); } }
+
+  .controls { display: flex; align-items: center; gap: 16px; width: min(520px, 100%); padding: 10px 20px 10px 12px; border-radius: 999px; background: var(--bg-surface); border: 1px solid var(--border); }
+  .play { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--accent); flex: none; }
+  .play:hover { background: var(--bg-raised); }
+  .i-play { display: none; }
+  .tour:not(.playing) .i-play { display: block; }
+  .tour:not(.playing) .i-pause { display: none; }
+  .segs { display: flex; gap: 4px; flex: none; }
+  .seg { width: 28px; height: 16px; display: grid; align-items: center; }
+  .seg span { display: block; height: 3px; border-radius: 2px; background: rgba(238, 244, 242, 0.2); overflow: hidden; position: relative; }
+  .seg span::after { content: ""; position: absolute; inset: 0; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+  .seg.done span::after, .seg.on span::after { transform: scaleX(1); }
+  .seg.timing span::after { animation: fill var(--step) linear both; }
+  @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .count { color: var(--text-secondary); white-space: nowrap; }
+  .step-label { font-weight: 600; font-size: 16px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  @media (max-width: 760px) {
+    .tour { gap: 24px; }
+    .controls { gap: 10px; padding-right: 14px; }
+    .seg { width: 18px; }
+    .step-label { font-size: 14px; }
+    .cursor, .cursor svg { width: 14px; height: 14px; }
+  }
+</style>
