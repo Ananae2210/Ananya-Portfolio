@@ -87,6 +87,24 @@ export const projects: Project[] = [
     url: "ananya.design/work/steady",
     preview: "steady",
   },
+  {
+    slug: "patient-cohort-builder",
+    index: "05",
+    title: "Patient Cohort Builder",
+    short: "Ask for patients in plain English and get the matching cohort, the SQL behind it, and a dashboard.",
+    summary:
+      "A text-to-SQL app I designed and built: plain-English clinical questions in, a checked, read-only cohort dashboard out.",
+    category: "AI engineering · Healthcare",
+    tags: ["LLM", "Text-to-SQL", "Streamlit"],
+    meta: [
+      { label: "Role", value: "Designer & developer" },
+      { label: "Stack", value: "Python · SQLite · Streamlit" },
+      { label: "Data", value: "800 synthetic patients" },
+    ],
+    outcome: "Personal project. 13 of 13 benchmark questions right, 21 of 21 safety checks pass.",
+    url: "ananya.design/work/patient-cohort-builder",
+    preview: "patient-cohort-builder",
+  },
 ];
 
 export const projectHref = (p: Project) => `/work/${p.slug}/`;
