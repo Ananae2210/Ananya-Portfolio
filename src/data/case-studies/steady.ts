@@ -213,5 +213,5 @@ export const steady: CaseStudy = {
     image: mobileDark,
     phone: true,
   },
-  next: { slug: "ai-cohort-builder", title: "AI Cohort Builder" },
+  next: { slug: "patient-cohort-builder", title: "Patient Cohort Builder" },
 };
