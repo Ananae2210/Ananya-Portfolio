@@ -1,0 +1,411 @@
+---
+/*
+  Abstract hero animation, "Complex data in. Clear decisions out."
+  Dots draw UI wireframes (a web page, a selected layer with cursor, a phone
+  screen, the pen tool) that morph from one to the next. Dots peel off the
+  wireframe, drift, then fall into teal lanes that converge into one
+  signal. That signal pours into the scroll cue, which leads the eye on to
+  the next section. Drop it inside a positioned hero; it sits behind the
+  content. Shapes live in hero-signal-shapes.ts.
+
+  Performance: one 2D canvas, 70–180 dots, DPR capped at 2, paused when the
+  hero is off screen or the tab is hidden. Reduced motion gets a single
+  still frame and a static cue.
+*/
+interface Props { target?: string }
+const { target = "#about" } = Astro.props;
+---
+<div class="signal" aria-hidden="true">
+  <canvas class="signal-canvas"></canvas>
+</div>
+<a class="scroll-cue" href={target} aria-label="Scroll to the next section" data-scroll-cue>
+  <span class="cue-track" aria-hidden="true"><span class="cue-pulse"></span></span>
+  <span class="cue-label label-s">Scroll</span>
+</a>
+
+<style>
+  .signal {
+    position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 100vw; transform: translateX(-50%);
+    pointer-events: none; z-index: 0;
+  }
+  .signal-canvas { display: block; width: 100%; height: 100%; }
+
+  .scroll-cue {
+    position: absolute; z-index: 2;
+    /* fallback before the script places it */
+    right: calc(var(--page-x) + 24px); bottom: 40px;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 0 12px 8px;
+    color: var(--text-secondary);
+    opacity: 0;
+    animation: cue-in 900ms var(--ease) 1.8s forwards;
+    transition: color 200ms, opacity 400ms var(--ease);
+  }
+  .scroll-cue[data-placed] { right: auto; bottom: auto; }
+  .scroll-cue:hover { color: var(--accent); }
+  .scroll-cue.is-away { opacity: 0 !important; pointer-events: none; }
+
+  .cue-track {
+    position: relative; display: block;
+    width: 2px; height: 72px; border-radius: 2px;
+    background: var(--border); overflow: hidden;
+  }
+  .cue-pulse {
+    position: absolute; left: 0; top: 0;
+    width: 2px; height: 24px; border-radius: 2px;
+    background: linear-gradient(to bottom, rgba(0, 212, 180, 0), var(--accent));
+    transform: translateY(-24px);
+    animation: cue-pulse 1.8s var(--ease) 2.2s infinite;
+  }
+  .cue-label { letter-spacing: 0.2em; }
+
+  @keyframes cue-in {
+    from { opacity: 0; transform: translate(-50%, -12px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes cue-pulse {
+    0% { transform: translateY(-24px); }
+    70%, 100% { transform: translateY(72px); }
+  }
+
+  @media (max-width: 760px) {
+    .scroll-cue { gap: 8px; right: calc(var(--page-x) + 8px); bottom: 24px; }
+    .cue-track { height: 56px; }
+    @keyframes cue-pulse {
+      0% { transform: translateY(-24px); }
+      70%, 100% { transform: translateY(56px); }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-cue { animation: none; opacity: 1; }
+    .cue-pulse { animation: none; transform: translateY(24px); }
+  }
+</style>
+
+<script>
+  import { SHAPES, sampleShape } from "./hero-signal-shapes";
+
+  type P = {
+    x: number; y: number; hx: Float32Array; hy: Float32Array; head: number; len: number;
+    free: boolean; lane: number | null; speed: number; phase: number; born: number;
+  };
+
+  const TRAIL = 36;
+  const SHAPE_HOLD = 6.5;      // seconds each wireframe stays before morphing
+  const GREY = [147, 163, 159];
+  const LIGHT = [196, 210, 206];
+  const TEAL = [0, 212, 180];
+
+  const wrap = document.querySelector<HTMLElement>(".signal");
+  const canvas = wrap?.querySelector<HTMLCanvasElement>("canvas");
+  const cue = document.querySelector<HTMLAnchorElement>("[data-scroll-cue]");
+  const hero = wrap?.parentElement;
+  const ctx = canvas?.getContext("2d");
+
+  if (wrap && canvas && cue && hero && ctx) {
+    const reduceMq = matchMedia("(prefers-reduced-motion: reduce)");
+    const finePointer = matchMedia("(pointer: fine)").matches;
+
+    let W = 0, H = 0, dpr = 1, mobile = false;
+    let cx = 0, cy = 0;                          // where the signal enters the cue
+    let boxL = 0, boxR = 0, boxT = 0, boxB = 0;  // where the wireframes are drawn
+    let spreadL = 1, spreadR = 1, fieldL = 0;
+    let parts: P[] = [];
+    let targets: Float32Array[] = [];            // per shape: x0,y0,x1,y1… in canvas px
+    let ghostTargets: Float32Array[] = [];       // denser outline drawn under the dots
+    let ghost = new Float32Array(0);
+    let shapeI = 0, shapeAt = 0, introEnd = 0, morph = true;
+    let t = 0, last = 0, raf = 0, running = false, visible = true;
+    let glow = 0;
+    const mouse = { x: -9999, y: -9999 };
+
+    const rand = (a: number, b: number) => a + Math.random() * (b - a);
+    const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    const smooth = (a: number, b: number, v: number) => {
+      const k = clamp((v - a) / (b - a), 0, 1);
+      return k * k * (3 - 2 * k);
+    };
+
+    function home(p: P, i: number) {
+      p.free = false; p.lane = null; p.head = 0; p.len = 0;
+      p.x = targets[shapeI][i * 2]; p.y = targets[shapeI][i * 2 + 1];
+      p.born = t;
+    }
+
+    function layout() {
+      const cr = canvas!.getBoundingClientRect();
+      const hr = hero!.getBoundingClientRect();
+      mobile = innerWidth <= 760;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = cr.width; H = cr.height;
+      canvas!.width = Math.round(W * dpr);
+      canvas!.height = Math.round(H * dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Place the cue near the right edge of the content, low enough to read
+      // as the end of the hero but always inside the first screen.
+      const padR = parseFloat(getComputedStyle(hero!).paddingRight) || 0;
+      const contentRight = hr.right - padR;
+      const cueX = contentRight - (mobile ? 20 : 48);
+      const heroTopDoc = hr.top + scrollY;
+      const cueH = cue!.offsetHeight || 100;
+      const bottomGap = mobile ? 24 : 40;
+      const byHero = hr.height - cueH - bottomGap;
+      const byScreen = innerHeight - heroTopDoc - cueH - bottomGap;
+      const cueTop = Math.max(hr.height * 0.5, Math.min(byHero, byScreen));
+      cue!.style.left = `${cueX - hr.left}px`;
+      cue!.style.top = `${cueTop}px`;
+      cue!.dataset.placed = "";
+      cx = cueX - cr.left;
+      cy = cueTop + (hr.top - cr.top);
+
+      // Hero text marked data-signal-avoid (the role label): lanes stay right
+      // of it, and on mobile the wireframes sit in the gap beside it. On
+      // desktop the wireframes fill the space beside data-signal-beside (the
+      // name), above the role label.
+      let avoid: DOMRect | null = null;
+      hero!.querySelectorAll<HTMLElement>("[data-signal-avoid]").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width && (!avoid || r.right > avoid.right)) avoid = r;
+      });
+      const av = avoid as DOMRect | null;
+      const heroOff = hr.top - cr.top;
+      const nameR = hero!.querySelector<HTMLElement>("[data-signal-beside]")?.getBoundingClientRect();
+      boxR = contentRight - cr.left;
+      if (mobile && av) {
+        boxL = av.right - cr.left + 24;
+        boxT = av.top - cr.top - 10;
+        boxB = av.bottom - cr.top + 6;
+      } else {
+        boxL = (nameR ? nameR.right + 40 : hr.left + hr.width * 0.58) - cr.left;
+        boxT = heroOff + 16;
+        boxB = av ? av.top - cr.top - 24 : heroOff + (cy - heroOff) * 0.45;
+      }
+      fieldL = Math.min(cx - 40, Math.max(boxL, av ? av.right - cr.left + 32 : boxL));
+      spreadL = Math.max(cx - fieldL, 1);
+      spreadR = Math.max(boxR + 12 - cx, 1);
+
+      const count = Math.round(clamp(((boxR - boxL) * (boxB - boxT)) / 1000, 80, 190));
+      if (parts.length !== count) {
+        parts = Array.from({ length: count }, () => ({
+          x: 0, y: 0, hx: new Float32Array(TRAIL), hy: new Float32Array(TRAIL),
+          head: 0, len: 0, free: false, lane: null, speed: 1, phase: 0, born: 0,
+        }));
+      }
+
+      // Fit every wireframe into the box, right-aligned, and sample its dots.
+      const bw = boxR - boxL, bh = boxB - boxT;
+      const fit = (n: number) => SHAPES.map((s) => {
+        // as large as the space allows, right-aligned; on desktop it sits on
+        // the role label line so it lines up with the name
+        const sc = Math.min(bw / s.w, bh) * 0.98;
+        const ox = boxR - s.w * sc;
+        const oy = mobile ? boxT + (bh - sc) / 2 : boxB - sc;
+        const arr = new Float32Array(n * 2);
+        sampleShape(s, n).forEach(([x, y], i) => { arr[i * 2] = ox + x * sc; arr[i * 2 + 1] = oy + y * sc; });
+        return arr;
+      });
+      targets = fit(count);
+      ghostTargets = fit(mobile ? 340 : 720);
+      ghost = ghostTargets[0].slice();
+
+      // Intro: dots start scattered and assemble into the first wireframe.
+      t = 0; glow = 0; shapeI = 0; shapeAt = 0; introEnd = 1.6;
+      parts.forEach((p) => {
+        p.free = false; p.lane = null; p.head = 0; p.len = 0;
+        p.x = rand(boxL - 40, boxR + 20); p.y = rand(boxT - 20, boxB + 40);
+        p.speed = rand(0.6, 1.4); p.phase = rand(-1.2, 1.2); p.born = rand(-0.2, 0.4);
+      });
+    }
+
+    function step(dt: number) {
+      t += dt;
+      glow = Math.max(0, glow - dt * 1.6);
+      if (morph && t - shapeAt > SHAPE_HOLD) { shapeI = (shapeI + 1) % SHAPES.length; shapeAt = t; }
+      const tg = targets[shapeI];
+      const funnelTop = boxB;
+      const funnelH = Math.max(cy - funnelTop, 1);
+      const base = mobile ? 18 : 26;
+      const peel = dt / (mobile ? 12 : 16);   // chance per second a dot leaves the shape
+      const pull = Math.min(1, dt * 3.4);
+      // the faint outline morphs a little behind the dots
+      const gt = ghostTargets[shapeI], gp = Math.min(1, dt * 2.6);
+      for (let j = 0; j < ghost.length; j++) ghost[j] += (gt[j] - ghost[j]) * gp;
+
+      parts.forEach((p, i) => {
+        let vx = 0, vy = 0;
+        if (!p.free) {
+          // Holding the wireframe: ease to its point with a faint shimmer.
+          const tx = tg[i * 2] + Math.sin(t * 1.3 + p.phase * 5) * 1.2;
+          const ty = tg[i * 2 + 1] + Math.cos(t * 1.1 + p.phase * 4) * 1.2;
+          vx = ((tx - p.x) * pull) / dt; vy = ((ty - p.y) * pull) / dt;
+          if (t > introEnd && Math.random() < peel) p.free = true;
+        } else {
+          // Peeled off: a noisy drift that sinks towards the lanes…
+          const a = (Math.sin(p.x * 0.006 + t * 0.25) + Math.cos(p.y * 0.007 - t * 0.2)
+            + Math.sin((p.x - p.y) * 0.003 + t * 0.1)) * Math.PI * 0.66 + p.phase;
+          const nx = Math.cos(a) * base * p.speed + (p.x < boxL ? (boxL - p.x) * 1.2 : 0)
+            - (p.x > boxR + 20 ? (p.x - boxR - 20) * 1.2 : 0);
+          const ny = Math.sin(a) * base * p.speed + 42;
+          vx = nx; vy = ny;
+          // …then ordered lanes that converge into the signal.
+          const o = smooth(funnelTop - 40, funnelTop + 70, p.y);
+          if (o > 0 && p.lane === null) {
+            p.lane = clamp((p.x - cx) / (p.x < cx ? Math.max(cx - boxL, 1) : spreadR), -1, 1);
+          }
+          if (p.lane !== null && o > 0) {
+            const k = clamp((p.y - funnelTop) / funnelH, 0, 1);
+            // desktop: lanes fall, then bend together (S-curve);
+            // mobile: they tuck in to the right edge at once to clear the text
+            const shape = mobile ? Math.pow(Math.max(0, 1 - k / 0.1), 1.5) : (1 + Math.cos(Math.PI * k)) / 2;
+            const tx = cx + p.lane * (p.lane < 0 ? spreadL : spreadR) * shape + (mobile ? p.lane * 6 : 0);
+            const fx = (tx - p.x) * (mobile ? 7 : 3.2);
+            const fy = (mobile ? 60 : 80) + (mobile ? 130 : 170) * k;
+            vx = nx + (fx - nx) * o;
+            vy = ny + (fy - ny) * o;
+          }
+        }
+
+        // A gentle nudge away from the cursor.
+        if (finePointer) {
+          const dx = p.x - mouse.x, dy = p.y - mouse.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < 110 * 110 && d2 > 1) {
+            const d = Math.sqrt(d2), f = (1 - d / 110) * (p.free ? 140 : 900);
+            vx += (dx / d) * f; vy += (dy / d) * f;
+          }
+        }
+
+        p.x += vx * dt;
+        p.y += vy * dt;
+        p.hx[p.head] = p.x; p.hy[p.head] = p.y;
+        p.head = (p.head + 1) % TRAIL;
+        p.len = Math.min(p.len + 1, TRAIL);
+
+        if (p.free && p.y >= cy) { glow = Math.min(1, glow + 0.35); home(p, i); }
+      });
+    }
+
+    function draw() {
+      ctx!.clearRect(0, 0, W, H);
+      ctx!.lineCap = "round";
+      const funnelTop = boxB;
+      const funnelH = Math.max(cy - funnelTop, 1);
+
+      // faint dotted outline of the current wireframe
+      const ga = 0.3 * smooth(0.3, 1.6, t);
+      if (ga > 0) {
+        ctx!.fillStyle = `rgba(${LIGHT[0]},${LIGHT[1]},${LIGHT[2]},${ga})`;
+        const gs = mobile ? 1.4 : 1.8;
+        for (let j = 0; j < ghost.length; j += 2) ctx!.fillRect(ghost[j] - gs / 2, ghost[j + 1] - gs / 2, gs, gs);
+      }
+
+      for (const p of parts) {
+        const fade = smooth(0, 0.8, t - p.born);
+        let c: number[], alpha: number, n: number, r: number;
+        if (!p.free) {
+          c = LIGHT; alpha = 0.82 * fade; n = 6; r = mobile ? 1.5 : 1.9;
+        } else {
+          const k = clamp((p.y - funnelTop) / funnelH, 0, 1);
+          const o = smooth(funnelTop - 30, funnelTop + 120, p.y);
+          c = GREY.map((g, j) => Math.round(g + (TEAL[j] - g) * o));
+          alpha = (0.4 + 0.52 * o) * fade * (1 - 0.25 * smooth(0.92, 1, k));
+          // short ticks while drifting, long streaks once in a lane
+          n = Math.round(12 + (TRAIL - 12) * o);
+          r = 1.3 + o * 0.5;
+        }
+        n = Math.min(p.len, n);
+        if (n > 1) {
+          ctx!.beginPath();
+          for (let s = 0; s < n; s++) {
+            const j = (p.head - n + s + TRAIL) % TRAIL;
+            if (s === 0) ctx!.moveTo(p.hx[j], p.hy[j]); else ctx!.lineTo(p.hx[j], p.hy[j]);
+          }
+          ctx!.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},${alpha * 0.5})`;
+          ctx!.lineWidth = p.free ? 1.2 : 1;
+          ctx!.stroke();
+        }
+        ctx!.beginPath();
+        ctx!.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx!.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${alpha})`;
+        ctx!.fill();
+      }
+
+      // soft glow where the signal lands in the cue
+      const g = 0.25 + glow * 0.5;
+      const gr = mobile ? 18 : 26;
+      const grad = ctx!.createRadialGradient(cx, cy, 0, cx, cy, gr);
+      grad.addColorStop(0, `rgba(0,212,180,${g * 0.55})`);
+      grad.addColorStop(1, "rgba(0,212,180,0)");
+      ctx!.fillStyle = grad;
+      ctx!.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
+    }
+
+    function frame(now: number) {
+      const dt = Math.min((now - last) / 1000, 1 / 20);
+      last = now;
+      step(dt);
+      draw();
+      raf = requestAnimationFrame(frame);
+    }
+
+    function start() {
+      if (running || reduceMq.matches || !visible || document.hidden) return;
+      running = true;
+      last = performance.now();
+      raf = requestAnimationFrame(frame);
+    }
+    function stop() { running = false; cancelAnimationFrame(raf); }
+
+    function still() {
+      // Reduced motion: hold the page wireframe, let the signal settle, then
+      // show one calm frame.
+      morph = false;
+      for (let i = 0; i < 480; i++) step(1 / 60);
+      draw();
+    }
+
+    function init() {
+      stop();
+      morph = true;
+      layout();
+      if (reduceMq.matches) still(); else start();
+    }
+
+    // keep the canvas in step with layout changes; ignore small height-only
+    // changes from mobile browser toolbars
+    let lastW = innerWidth, lastH = innerHeight, timer = 0;
+    addEventListener("resize", () => {
+      if (innerWidth === lastW && Math.abs(innerHeight - lastH) < 120) return;
+      lastW = innerWidth; lastH = innerHeight;
+      clearTimeout(timer);
+      timer = window.setTimeout(init, 150);
+    });
+    reduceMq.addEventListener("change", init);
+    document.fonts?.ready.then(init);
+
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (visible) start(); else stop();
+    }).observe(hero);
+    document.addEventListener("visibilitychange", () => (document.hidden ? stop() : start()));
+
+    if (finePointer) {
+      addEventListener("pointermove", (e) => {
+        const r = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+      }, { passive: true });
+      document.addEventListener("pointerleave", () => { mouse.x = mouse.y = -9999; });
+    }
+
+    // the cue steps aside once the reader starts scrolling
+    const onScroll = () => cue.classList.toggle("is-away", scrollY > 80);
+    addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    init();
+  }
+</script>
