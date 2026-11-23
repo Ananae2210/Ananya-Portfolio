@@ -3,6 +3,7 @@ import Base from "../layouts/Base.astro";
 import SkillsMarquee from "../components/SkillsMarquee.astro";
 import FeaturedStack from "../components/FeaturedStack.astro";
 import FeaturedCarousel from "../components/FeaturedCarousel.astro";
+import HeroSignal from "../components/HeroSignal.astro";
 import { site } from "../data/site";
 import { projects } from "../data/projects";
 
@@ -34,9 +35,10 @@ const tools = [
 <Base active="home">
   <!-- Hero -->
   <section class="hero page px">
+    <HeroSignal target="#about" />
     <div class="name-row">
       <h1 class="display d-xxl name">Ananya<br />Asthana</h1>
-      <p class="label-m muted role">UI/UX &amp;<br />Visual Design</p>
+      <p class="label-m muted role" data-signal-avoid>UI/UX &amp;<br />Visual Design</p>
     </div>
     <p class="display d-l manifesto">
       <span>Complex data in.</span>
@@ -139,7 +141,8 @@ const tools = [
   }
 
   /* hero */
-  .hero { display: flex; flex-direction: column; gap: 56px; padding-top: var(--section-s); padding-bottom: 120px; }
+  .hero { position: relative; display: flex; flex-direction: column; gap: 56px; padding-top: var(--section-s); padding-bottom: 120px; }
+  .name-row, .manifesto, .ctas { position: relative; z-index: 1; }
   .name-row { display: flex; align-items: flex-end; gap: 40px; }
   .name { font-size: var(--type-display-xxl); line-height: 0.9; }
   .role { padding-bottom: 28px; line-height: 2; }
