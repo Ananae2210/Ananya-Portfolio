@@ -37,7 +37,7 @@ const tools = [
   <section class="hero page px">
     <HeroSignal target="#about" />
     <div class="name-row">
-      <h1 class="display d-xxl name">Ananya<br />Asthana</h1>
+      <h1 class="display d-xxl name" data-signal-beside>Ananya<br />Asthana</h1>
       <p class="label-m muted role" data-signal-avoid>UI/UX &amp;<br />Visual Design</p>
     </div>
     <p class="display d-l manifesto">
@@ -193,7 +193,7 @@ const tools = [
   @media (max-width: 760px) {
     .hero { gap: 32px; padding-top: 48px; padding-bottom: 80px; }
     .name-row { flex-direction: column; align-items: flex-start; gap: 16px; }
-    .role { padding-bottom: 0; }
+    .role { padding-bottom: 0; min-height: 128px; } /* room for the hero wireframes beside it */
     .featured { padding-top: 64px; padding-bottom: 64px; }
     .fw-header { padding-bottom: 32px; }
     .fw-footer { flex-direction: column; align-items: stretch; border-top: 0; margin-top: 0; padding-top: 32px; }
